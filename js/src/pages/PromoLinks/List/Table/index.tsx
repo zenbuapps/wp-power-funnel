@@ -1,7 +1,6 @@
 import {memo} from 'react'
 import {useTable} from '@refinedev/antd'
 import {Table, Spin, Button, TableProps, Card} from 'antd'
-
 import {HttpError, useCreate} from '@refinedev/core'
 import {TPromoLinkRecord} from '@/pages/PromoLinks/types'
 import useColumns from '@/pages/PromoLinks/List/hooks/useColumns'

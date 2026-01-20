@@ -6,21 +6,30 @@ import GetProfile from "@line/liff/get-profile";
 import GetLineVersion from "@line/liff/get-line-version";
 import IsInClient from "@line/liff/is-in-client";
 import CloseWindow from "@line/liff/close-window";
-import { LIFF_ID } from '@/utils'
-import {axiosInstance} from '@/rest-data-provider'
+import { LIFF_ID, NONCE} from '@/utils'
+
 import liff from "@line/liff/core";
+import axios, { AxiosInstance } from "axios";
 
 
 type TUser = {
     "userId": string
     "name": string
-    "picture": string
-    "os": string
+    "picture": string | undefined
+    "os": string | undefined
     "version": string
     "lineVersion": null|string,
     "isInClient": boolean
     "isLoggedIn": boolean
 }
+
+const axiosInstance: AxiosInstance = axios.create({
+    timeout: 30000,
+    headers: {
+        'X-WP-Nonce': NONCE,
+        'Content-Type': 'application/json',
+    },
+})
 
 // 初始化 LIFF
 async function initLiff() {

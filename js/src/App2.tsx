@@ -1,9 +1,10 @@
 /* eslint-disable quote-props */
 import '@/assets/scss/index.scss'
 import '@refinedev/antd/dist/reset.css'
-import { saveLiffUserInfo, IS_LOCAL } from '@/utils'
+import { saveLiffUserInfo, IS_LOCAL} from '@/utils'
 import liff from "@line/liff/core";
 import {useState, useEffect} from 'react'
+
 
 /**
  * LIFF APP 看到的 loading 畫面

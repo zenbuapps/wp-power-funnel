@@ -7,9 +7,7 @@ export const resources = [
     {
         name: 'promo-links',
         list: '/promo-links',
-        create: '/promo-links',
-        edit: '/promo-links/:id',
-        show: '/promo-links/:id',
+        edit: '/promo-links/edit/:id',
         meta: {
             canDelete: true,
             label: 'LINE 連結',
@@ -19,9 +17,7 @@ export const resources = [
     {
         name: 'workflow-rules',
         list: '/workflow-rules',
-        create: '/workflow-rules',
-        edit: '/workflow-rules/:id',
-        show: '/workflow-rules/:id',
+        edit: '/workflow-rules/edit/:id',
         meta: {
             canDelete: true,
             label: '自動化',

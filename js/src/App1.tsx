@@ -2,11 +2,10 @@
 import '@/assets/scss/index.scss'
 
 import { Refine } from '@refinedev/core'
-import {PromoLinksList} from '@/pages'
+import {PromoLinksEdit, PromoLinksList} from '@/pages'
 
 import {
 	ErrorComponent,
-	useNotificationProvider,
 	ThemedLayoutV2,
 	ThemedSiderV2,
 } from '@refinedev/antd'
@@ -16,12 +15,12 @@ import routerBindings, {
 	NavigateToResource,
 	UnsavedChangesNotifier,
 } from '@refinedev/react-router'
-import { dataProvider } from './rest-data-provider'
 import { HashRouter, Outlet, Route, Routes } from 'react-router'
 import { resources } from '@/resources'
 import { ConfigProvider } from 'antd'
 import { useEnv } from "antd-toolkit"
 import {TEnv} from '@/types'
+import { notificationProvider, dataProvider } from "antd-toolkit/refine"
 
 function App() {
     const { KEBAB, API_URL, AXIOS_INSTANCE } = useEnv<TEnv>()
@@ -37,7 +36,7 @@ function App() {
                             'wc-store': dataProvider(`${API_URL}/wc/store/v1`, AXIOS_INSTANCE),
                             'power-funnel': dataProvider(`${API_URL}/${KEBAB}`, AXIOS_INSTANCE),
 						}}
-						notificationProvider={useNotificationProvider}
+						notificationProvider={notificationProvider}
 						routerProvider={routerBindings}
 						resources={resources}
 						options={{
@@ -81,7 +80,7 @@ function App() {
 								<Route index element={<NavigateToResource resource="promo-links" />} />
                                 <Route path="promo-links">
                                     <Route index element={<PromoLinksList />} />
-                                    {/*<Route path="edit/:id" element={<PromoLinksEdit />} />*/}
+                                    <Route path="edit/:id" element={<PromoLinksEdit />} />
                                 </Route>
 								<Route path="*" element={<ErrorComponent />} />
 							</Route>

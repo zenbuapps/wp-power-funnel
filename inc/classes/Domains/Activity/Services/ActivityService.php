@@ -16,7 +16,7 @@ final class ActivityService {
 	private array $activity_providers;
 
 	/** Constructor */
-	public function __construct() {
+	private function __construct() {
 		// @phpstan-ignore-next-line
 		$this->activity_providers = \apply_filters('power_funnel/activity_providers', []);
 	}

@@ -71,7 +71,7 @@ final class GoogleOAuthService {
 			$params['state'] = $state;
 		}
 
-		return self::AUTHORIZATION_ENDPOINT . '?' . http_build_query( $params );
+		return self::AUTHORIZATION_ENDPOINT . '?' . \http_build_query( $params );
 	}
 
 	/**
@@ -130,7 +130,7 @@ final class GoogleOAuthService {
 		// 預留 30 秒緩衝時間
 		$expires_at = $token['created'] + $token['expires_in'] - 30;
 
-		return time() >= $expires_at;
+		return \time() >= $expires_at;
 	}
 
 	/**
@@ -165,7 +165,7 @@ final class GoogleOAuthService {
 		$response_body = \wp_remote_retrieve_body( $response );
 
 		/** @var array<string, mixed>|null $data */
-		$data = json_decode( $response_body, true );
+		$data = \json_decode( $response_body, true );
 
 		if ( null === $data ) {
 			throw new \Exception( 'Google OAuth Token 回應解析失敗' );
@@ -181,7 +181,7 @@ final class GoogleOAuthService {
 				$error_message = '未知錯誤';
 			}
 			throw new \Exception(
-				sprintf(
+				\sprintf(
 					'Google OAuth Token 請求失敗 (%d): %s',
 					$status_code,
 					$error_message

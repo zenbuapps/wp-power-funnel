@@ -48,13 +48,13 @@ const DeleteButton = ({
 							resource: 'posts',
 							ids: selectedRowKeys as string[],
 							mutationMode: 'optimistic',
-							successNotification: (data, ids, resource) => {
+							successNotification: (_data, ids, _resource) => {
 								return {
 									message: ` LINE 連結 ${ids?.map((id) => `#${id}`).join(', ')} 已刪除成功`,
 									type: 'success',
 								}
 							},
-							errorNotification: (data, ids, resource) => {
+							errorNotification: (_data, _ids, _resource) => {
 								return {
 									message: 'OOPS，出錯了，請在試一次',
 									type: 'error',

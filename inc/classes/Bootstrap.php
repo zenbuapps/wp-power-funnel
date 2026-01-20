@@ -26,6 +26,7 @@ final class Bootstrap {
 		ActivityService::instance();
 		Applications\SendLine::register_hooks();
 		Applications\RegisterActivityViaLine::register_hooks();
+		Applications\ActivityApi::register_hooks();
 
 		\add_action( 'admin_enqueue_scripts', [ __CLASS__, 'admin_enqueue_script' ] );
 	}
