@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { APP1_SELECTOR, APP2_SELECTOR, env } from '@/utils'
 import { StyleProvider } from '@ant-design/cssinjs'
-import { ConfigProvider } from "antd"
+import { ConfigProvider } from 'antd'
 import { EnvProvider } from 'antd-toolkit'
 
 const App1 = React.lazy(() => import('./App1'))
@@ -35,34 +35,34 @@ const mapping = [
 
 document.addEventListener('DOMContentLoaded', () => {
 	mapping.forEach(({ els, App }) => {
-			els.forEach((el) => {
-				ReactDOM.createRoot(el).render(
-                        <React.StrictMode>
-                            <QueryClientProvider client={queryClient}>
-                                <StyleProvider hashPriority="low">
-                                    <EnvProvider env={env}>
-                                            <ConfigProvider
-                                                    theme={{
-                                                        token: {
-                                                            colorPrimary: '#1677ff',
-                                                            borderRadius: 6,
-                                                        },
-                                                        components: {
-                                                            Segmented: {
-                                                                itemSelectedBg: '#1677ff',
-                                                                itemSelectedColor: '#ffffff',
-                                                            },
-                                                        },
-                                                    }}
-                                            >
-                                                <App />
-                                            </ConfigProvider>
-                                    </EnvProvider>
-                                </StyleProvider>
-                                <ReactQueryDevtools initialIsOpen={false} />
-                            </QueryClientProvider>
-                        </React.StrictMode>,
-				)
-			})
+		els.forEach((el) => {
+			ReactDOM.createRoot(el).render(
+				<React.StrictMode>
+					<QueryClientProvider client={queryClient}>
+						<StyleProvider hashPriority="low">
+							<EnvProvider env={env}>
+								<ConfigProvider
+									theme={{
+										token: {
+											colorPrimary: '#1677ff',
+											borderRadius: 6,
+										},
+										components: {
+											Segmented: {
+												itemSelectedBg: '#1677ff',
+												itemSelectedColor: '#ffffff',
+											},
+										},
+									}}
+								>
+									<App />
+								</ConfigProvider>
+							</EnvProvider>
+						</StyleProvider>
+						<ReactQueryDevtools initialIsOpen={false} />
+					</QueryClientProvider>
+				</React.StrictMode>,
+			)
+		})
 	})
 })

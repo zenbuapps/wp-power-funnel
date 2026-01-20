@@ -154,7 +154,7 @@ final class GoogleOAuthService {
 
 		if ( \is_wp_error( $response ) ) {
 			throw new \Exception(
-				sprintf(
+				\sprintf(
 					'Google OAuth Token 請求失敗: %s',
 					$response->get_error_message()
 				)

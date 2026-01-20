@@ -35,17 +35,17 @@ final class ActivityService {
 	 * @return array<ActivityDTO> 活動 DTO 陣列
 	 */
 	public function get_activities( array $params = [] ): array {
-		$id             = $params['id'] ?? null;
-		$keyword        = $params['keyword'] ?? '';
-		$last_n_days    = $params['last_n_days'] ?? 0;
-		$all_activities = $this->get_all_activities();
+		$id                      = (string) ( $params['id'] ?? null );
+		$keyword                 = (string) ( $params['keyword'] ?? '' );
+		$last_n_days             = (int) ( $params['last_n_days'] ?? 0 );
+		$registerable_activities = $this->get_registerable_activities();
 
 		if (!$id && !$keyword && !$last_n_days) {
-			return $all_activities;
+			return $registerable_activities;
 		}
 
 		$activities = [];
-		foreach ($all_activities as $activity) {
+		foreach ( $registerable_activities as $activity) {
 			// 如果有指定 id 就直接查找
 			if ($id && $activity->id === $id) {
 				return [ $activity ];
@@ -82,6 +82,7 @@ final class ActivityService {
 			);
 		return \reset($activities) ?: null;
 	}
+
 	/**
 	 * 取得所有活動
 	 *
@@ -102,5 +103,23 @@ final class ActivityService {
 			];
 		}
 		return $activities;
+	}
+
+	/**
+	 * 取得所有"可報名" (>今天)的活動
+	 *
+	 * @param string $provider_id 從指定的活動提供商身上取得活動
+	 *
+	 * @return array<ActivityDTO> 活動 DTO 陣列
+	 */
+	private function get_registerable_activities( string $provider_id = '' ): array {
+		$all_activities = $this->get_all_activities( $provider_id );
+		$now            = new \DateTime();
+		return \array_filter(
+			$all_activities,
+			static function ( ActivityDTO $activity ) use ( $now ) {
+				return $activity->scheduled_start_time > $now;
+			}
+			);
 	}
 }

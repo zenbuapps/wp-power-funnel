@@ -25,7 +25,7 @@ final class ActivityDTO extends DTO {
 	public string $thumbnail_url = '';
 
 	/** @var array<string, mixed> 活動 meta_data */
-	public array $meta;
+	public array $meta = [];
 
 	/** @var \DateTime 排程的活動開始時間 */
 	public \DateTime $scheduled_start_time;
@@ -50,5 +50,18 @@ final class ActivityDTO extends DTO {
 	 */
 	public function is_content_keyword( string $keyword ): bool {
 		return \str_contains( $this->title, $keyword );
+	}
+
+	/** 覆寫 to_array */
+	public function to_array(): array {
+		return [
+			'id'                   => $this->id,
+			'activity_provider_id' => $this->activity_provider_id,
+			'title'                => $this->title,
+			'description'          => $this->description,
+			'thumbnail_url'        => $this->thumbnail_url,
+			'meta'                 => $this->meta,
+			'scheduled_start_time' => $this->scheduled_start_time->getTimestamp(),
+		];
 	}
 }

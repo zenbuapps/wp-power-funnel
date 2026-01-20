@@ -2,8 +2,8 @@ import { Table, TableProps, Input, Space, Button } from 'antd'
 import { TPromoLinkRecord } from '@/pages/PromoLinks/types'
 import { ProductName } from 'antd-toolkit/wp'
 import { useNavigation } from '@refinedev/core'
-import { CopyText } from "antd-toolkit"
-import { SITE_URL } from '@/utils'
+import { CopyText } from 'antd-toolkit'
+import { getLiffLink, SITE_URL } from '@/utils'
 
 const useColumns = () => {
 	const { edit } = useNavigation()
@@ -17,12 +17,16 @@ const useColumns = () => {
 			dataIndex: 'name',
 			width: 300,
 			render: (_, record) => (
-				<ProductName hideImage={true} record={record} onClick={onClick(record)} />
+				<ProductName
+					hideImage={true}
+					record={record}
+					onClick={onClick(record)}
+				/>
 			),
 		},
 		{
 			title: '關鍵字',
-			dataIndex: 'keywords',
+			dataIndex: 'keyword',
 			width: 80,
 		},
 		{
@@ -34,10 +38,15 @@ const useColumns = () => {
 			title: '操作',
 			dataIndex: '_actions',
 			width: 160,
-			render: (_, record) => <Space.Compact block>
-				<Input readOnly value={`${SITE_URL}/liff?promoLinkId=${record.id}`} />
-				<Button type="default" icon={<CopyText text={`${SITE_URL}/liff?promoLinkId=${record.id}`} />} />
-			</Space.Compact>,
+			render: (_, record) => (
+				<Space.Compact block>
+					<Input readOnly value={`${SITE_URL}/liff?promoLinkId=${record.id}`} />
+					<Button
+						type="default"
+						icon={<CopyText text={getLiffLink(record.id)} />}
+					/>
+				</Space.Compact>
+			),
 		},
 	]
 

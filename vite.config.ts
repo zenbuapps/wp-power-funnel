@@ -9,58 +9,61 @@ import { defineConfig } from 'vite'
 import { v4wp } from '@kucrut/vite-for-wp'
 
 export default defineConfig({
-    server: {
-        port: 5188,
-        cors: {
-            origin: '*',
-        },
-        fs: {
-            allow: ['./', '../../packages'],
-        },
-    },
-    build: {
-        emptyOutDir: true,
-        minify: true,
-        cssCodeSplit: false,
-        rollupOptions: {
-            output: {
-                assetFileNames: (assetInfo) => {
-                    return '[ext]/[name].[ext]';
-                },
-            },
-        },
-    },
-    plugins: [
-        alias(),
-        react(),
-        tsconfigPaths(),
+	server: {
+		port: 5188,
+		cors: {
+			origin: '*',
+		},
+		fs: {
+			allow: ['./', '../../packages'],
+		},
+	},
+	build: {
+		emptyOutDir: true,
+		minify: true,
+		cssCodeSplit: false,
+		rollupOptions: {
+			output: {
+				assetFileNames: (assetInfo) => {
+					return '[ext]/[name].[ext]'
+				},
+			},
+		},
+	},
+	plugins: [
+		alias(),
+		react(),
+		tsconfigPaths(),
 
-        // liveReload(__dirname + '/**/*.php'), // Optional, if you want to reload page on php changed
+		// liveReload(__dirname + '/**/*.php'), // Optional, if you want to reload page on php changed
 
-        v4wp({
-            input: 'js/src/main.tsx', // Optional, defaults to 'src/main.js'.
-            outDir: 'js/dist', // Optional, defaults to 'dist'.
-        }),
-    ],
+		v4wp({
+			input: 'js/src/main.tsx', // Optional, defaults to 'src/main.js'.
+			outDir: 'js/dist', // Optional, defaults to 'dist'.
+		}),
+	],
 
-    // build: {
-    // 	rollupOptions: {
-    // 		output: {
-    // 			// 修改入口檔案名稱
-    // 			entryFileNames: 'index.js',
+	// build: {
+	// 	rollupOptions: {
+	// 		output: {
+	// 			// 修改入口檔案名稱
+	// 			entryFileNames: 'index.js',
 
-    // 			// 修改代碼分割後的檔案名稱
-    // 			chunkFileNames: '[name]-[hash].js',
+	// 			// 修改代碼分割後的檔案名稱
+	// 			chunkFileNames: '[name]-[hash].js',
 
-    // 			// 修改資源檔案名稱
-    // 			assetFileNames: '[name]-[hash].[ext]',
-    // 		},
-    // 	},
-    // },
-    resolve: {
-        alias: {
-            '@power/general': path.resolve(__dirname, '../../packages/general/index.ts'),
-            '@': path.resolve(__dirname, 'js/src'),
-        },
-    },
+	// 			// 修改資源檔案名稱
+	// 			assetFileNames: '[name]-[hash].[ext]',
+	// 		},
+	// 	},
+	// },
+	resolve: {
+		alias: {
+			'@power/general': path.resolve(
+				__dirname,
+				'../../packages/general/index.ts',
+			),
+			'@': path.resolve(__dirname, 'js/src'),
+		},
+	},
 })

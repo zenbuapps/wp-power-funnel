@@ -86,8 +86,8 @@ const DeleteButton = ({
 					showIcon
 				/>
 				<p className="mb-2">
-					您確定要這麼做嗎?
-					如果您已經知曉刪除 LINE 連結帶來的影響，並仍想要刪除這些 LINE 連結，請在下方輸入框輸入{' '}
+					您確定要這麼做嗎? 如果您已經知曉刪除 LINE
+					連結帶來的影響，並仍想要刪除這些 LINE 連結，請在下方輸入框輸入{' '}
 					<b className="italic">{CONFIRM_WORD}</b>{' '}
 				</p>
 				<Input
