@@ -8,12 +8,12 @@ import useSave from '@/pages/Settings/hooks/useSave'
 const items: TabsProps['items'] = [
 	{
 		key: 'line',
-		label: 'LINE API 設定',
+		label: 'Line Api 設定',
 		children: <Line />,
 	},
 	{
 		key: 'youtube',
-		label: 'Youtube API 設定',
+		label: 'Youtube Api 設定',
 		children: <Youtube />,
 	},
 ]

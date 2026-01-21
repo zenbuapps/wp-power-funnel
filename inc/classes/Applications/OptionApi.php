@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace J7\PowerFunnel\Applications;
 
+use J7\PowerFunnel\Infrastructure\Youtube\Services\YoutubeService;
 use J7\PowerFunnel\Shared\Enums\EOptionName;
 use J7\WpUtils\Classes\ApiBase;
 use J7\WpUtils\Traits\SingletonTrait;
@@ -32,6 +33,10 @@ final class OptionApi extends ApiBase {
 			'endpoint' => 'options',
 			'method'   => 'post',
 		],
+		[
+			'endpoint' => 'revoke-google-oauth',
+			'method'   => 'post',
+		],
 	];
 
 	/** Register hooks */
@@ -54,7 +59,7 @@ final class OptionApi extends ApiBase {
 		return new \WP_REST_Response(
 			[
 				'code'    => 'get_options_success',
-				'message' => '儲存失敗',
+				'message' => '取得設定成功',
 				'data'    => $options,
 			]
 			);
@@ -87,5 +92,26 @@ final class OptionApi extends ApiBase {
 				'data'    => null,
 			]
 			);
+	}
+
+
+	/**
+	 * 撤銷 Google OAuth 授權
+	 *
+	 * @param \WP_REST_Request $request REST請求對象。
+	 * @return \WP_REST_Response 返回包含選項資料的REST響應對象。
+	 * @phpstan-ignore-next-line
+	 */
+	public function post_revoke_google_oauth_callback( \WP_REST_Request $request ): \WP_REST_Response {
+		$service = YoutubeService::instance();
+		$service->revoke_token();
+
+		return new \WP_REST_Response(
+			[
+				'code'    => 'revoke_google_oauth_success',
+				'message' => '撤銷 Google OAuth 成功',
+				'data'    => null,
+			]
+		);
 	}
 }

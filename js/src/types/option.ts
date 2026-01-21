@@ -1,3 +1,18 @@
 export type TOptions = {
-	[key: string]: any
+	line: {
+		channel_access_token: string
+		channel_id: string
+		channel_secret: string
+		liff_id: string
+	}
+	youtube: {
+		channelId: string
+		clientId: string
+		clientSecret: string
+		redirectUri: string
+	}
+	googleOauth: {
+		isAuthorized: boolean
+		authUrl: string
+	}
 }

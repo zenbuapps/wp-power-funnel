@@ -12,9 +12,6 @@ final class SettingDTO extends DTO {
 	/** @var string 儲存在 options table 的 option name */
 	private const OPTION_NAME = '_power_funnel_youtube_setting';
 
-	/** @var string 頻道 Id */
-	public string $channelId = '';
-
 	/** @var string 用戶端 Id */
 	public string $clientId = '';
 

@@ -1,5 +1,5 @@
 /* eslint-disable quote-props */
-import '@/assets/scss/index.scss'
+import '@/assets/scss/liff.scss'
 import '@refinedev/antd/dist/reset.css'
 import { saveLiffUserInfo, IS_LOCAL } from '@/utils'
 import liff from '@line/liff/core'
