@@ -13,6 +13,8 @@ if (!defined('ABSPATH')) {
 	exit;
 }
 
+$liff_style = \J7\PowerFunnel\Plugin::$url . '/js/dist/css/style.css?ver=' . \J7\PowerFunnel\Plugin::$version;
+
 ?>
 <!DOCTYPE html>
 <html <?php \language_attributes(); ?>>
@@ -20,13 +22,13 @@ if (!defined('ABSPATH')) {
 	<meta charset="<?php \bloginfo('charset'); ?>">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<link rel='stylesheet' id='liff-css' href='<?php echo $liff_style; ?>' media='all' />
 	<title><?php echo \bloginfo('name'); ?></title>
 </head>
 <body>
 	<div id="power_funnel_liff_app"></div>
 	
 	<?php
-	// wp_footer();
 	/**
 	 * Prints any scripts and data queued for the footer.
 	 *

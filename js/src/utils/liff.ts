@@ -71,10 +71,13 @@ async function sendUserToBackend(user: TUser) {
 	const urlParams = Object.fromEntries(
 		new URLSearchParams(window.location.search),
 	)
-	const res = await axiosInstance.post('power-funnel/liff', {
-		urlParams,
-		...user,
-	})
+	const res = await axiosInstance.post(
+		`${SITE_URL}/wp-json/power-funnel/liff`,
+		{
+			urlParams,
+			...user,
+		},
+	)
 	console.log('後端回應:', res)
 }
 
@@ -85,8 +88,4 @@ export async function saveLiffUserInfo() {
 	console.log('user:', user)
 	// 故意不 await 請求送出就算完成
 	sendUserToBackend(user as TUser)
-}
-
-export function getLiffLink(id: string) {
-	return `${SITE_URL}/liff?promoLinkId=${id}`
 }

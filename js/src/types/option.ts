@@ -4,6 +4,7 @@ export type TOptions = {
 		channel_id: string
 		channel_secret: string
 		liff_id: string
+		liff_url: string
 	}
 	youtube: {
 		channelId: string

@@ -10,6 +10,10 @@ const LINE_FIELDS: FormItemProps[] = [
 		label: 'Liff Id',
 	},
 	{
+		name: 'liff_url',
+		label: 'Liff Url',
+	},
+	{
 		name: 'channel_id',
 		label: 'Channel Id',
 	},
@@ -34,19 +38,19 @@ const TUTORIALS: React.ReactNode[][] = [
 		</>,
 	],
 	['輸入 Provider 名稱'],
-	['創建 Line Login Channel'],
-	['勾選 Web app'],
-	['前往 Line Login'],
-	['看到 Channel ID 先不用理會，不是這個'],
-	['看到 Channel secret 先不用理會，不是這個'],
+	['創建 「Line Login Channel」'],
+	['勾選 「Web app」'],
+	['前往 「Line Login」'],
+	['看到 Channel Id 先不用理會，不是這個'],
+	['看到 Channel Secret 先不用理會，不是這個'],
 	['新增 Liff App'],
 	[
 		'Size 選擇 Full (推薦)',
 		`Endpoint 填寫 ${SITE_URL}/liff`,
 		'Scope 選擇 openid & profile',
 	],
-	['新增好友選項，選擇任何一個 On 都可以'],
-	['複製 Liff ID'],
+	['新增好友選項，選擇任何一個 「On」 都可以'],
+	['複製 「Liff Id」 以及 「Liff Url」'],
 	[
 		<>
 			前往{' '}
@@ -57,11 +61,11 @@ const TUTORIALS: React.ReactNode[][] = [
 		'選擇要連接的 Line 官方帳號',
 	],
 	['點擊設定'],
-	['啟用 Message API'],
+	['啟用 Message Api'],
 	['選擇服務提供者，即剛剛創建的 Line Login'],
 	['填寫完資料，確認'],
 	[
-		'複製 Channel ID & Channel secret',
+		'複製 「Channel Id」 & 「Channel Secret」',
 		`輸入 ${SITE_URL}/wp-json/power-funnel/line-callback`,
 	],
 	[
@@ -72,7 +76,7 @@ const TUTORIALS: React.ReactNode[][] = [
 			</a>
 		</>,
 	],
-	['將 Liff APP 連接 Line 官方帳號'],
+	['將 Liff App 連接 Line 官方帳號'],
 	[
 		<>
 			回到{' '}
@@ -82,8 +86,8 @@ const TUTORIALS: React.ReactNode[][] = [
 		</>,
 	],
 	['前往 Message API'],
-	['發行 Access Token'],
-	['複製 Channel access token'],
+	['發行 「Access Token」'],
+	['複製 「Channel access token」'],
 ]
 
 const HEADINGS = {
@@ -100,7 +104,11 @@ const index = () => {
 				<Heading className="mt-8">Line Api 設定</Heading>
 				{LINE_FIELDS.map(({ name, label }) => (
 					<Item key={name} name={['line', name]} label={label}>
-						<Input.Password allowClear />
+						{'liff_url' === name ? (
+							<Input allowClear />
+						) : (
+							<Input.Password allowClear />
+						)}
 					</Item>
 				))}
 			</div>

@@ -15,13 +15,11 @@ final class SettingDTO extends DTO {
 	/** @var string 儲存在 options table 的 option name */
 	private const OPTION_NAME = '_power_funnel_line_setting';
 
-	/**
-	 * Channel Access Token
-	 * 用於驗證 LINE Messaging API 的存取權杖
-	 *
-	 * @var string
-	 */
-	public string $channel_access_token = '';
+	/** LIFF ID */
+	public string $liff_id = '';
+
+	/** LIFF URL */
+	public string $liff_url = '';
 
 	/**
 	 * Channel ID
@@ -39,8 +37,14 @@ final class SettingDTO extends DTO {
 	 */
 	public string $channel_secret = '';
 
-	/** LIFF ID */
-	public string $liff_id = '';
+
+	/**
+	 * Channel Access Token
+	 * 用於驗證 LINE Messaging API 的存取權杖
+	 *
+	 * @var string
+	 */
+	public string $channel_access_token = '';
 
 	/**  @return self 取得實例 */
 	public static function instance(): self {

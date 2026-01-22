@@ -16,7 +16,7 @@ import {
 } from 'antd'
 import { TActivity } from '@/types/activity'
 import { EyeOutlined } from '@ant-design/icons'
-import { getLiffLink } from '@/utils'
+import useLiffUrl from '@/pages/Settings/hooks/useLiffUrl'
 
 const { Item } = Form
 
@@ -78,7 +78,7 @@ const EditComponent = () => {
 
 	// endregion 預覽功能
 
-	const liffLink = getLiffLink(id!.toString())
+	const { url: liffUrl, hasLiffUrl } = useLiffUrl(id!.toString())
 
 	return (
 		<div className="sticky-card-actions sticky-tabs-nav">
@@ -154,6 +154,14 @@ const EditComponent = () => {
 								showIcon
 								className="mt-0 mb-4"
 							/>
+							{!hasLiffUrl && (
+								<Alert
+									className="mb-4"
+									message="找不到 「Liff Url」，請先前往「設定」更新 「Liff Url」"
+									type="error"
+									showIcon
+								/>
+							)}
 							{!!activities.length && (
 								<>
 									<div className="w-full overflow-x-auto pb-2">
@@ -182,11 +190,15 @@ const EditComponent = () => {
 											)}
 										</div>
 									</div>
-									<div className="flex gap-x-2 mt-4">
-										當用戶點擊 <code>{liffLink}</code>{' '}
-										<CopyText text={liffLink} /> 連結時，LINE
-										會收到上面的活動推播
-									</div>
+									{hasLiffUrl && (
+										<div className="inline-block mt-4">
+											當用戶點擊 <code>{liffUrl}</code>{' '}
+											<div className="inline-block mx-2">
+												<CopyText text={liffUrl} />
+											</div>
+											連結時，LINE 會收到上面的活動推播
+										</div>
+									)}
 								</>
 							)}
 							{!activities.length && (

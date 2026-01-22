@@ -1,9 +1,8 @@
-import { Table, TableProps, Input, Space, Button } from 'antd'
+import { Table, TableProps } from 'antd'
 import { TPromoLinkRecord } from '@/pages/PromoLinks/types'
 import { ProductName } from 'antd-toolkit/wp'
 import { useNavigation } from '@refinedev/core'
-import { CopyText } from 'antd-toolkit'
-import { getLiffLink, SITE_URL } from '@/utils'
+import { LiffUrl } from '@/components'
 
 const useColumns = () => {
 	const { edit } = useNavigation()
@@ -38,15 +37,7 @@ const useColumns = () => {
 			title: '操作',
 			dataIndex: '_actions',
 			width: 160,
-			render: (_, record) => (
-				<Space.Compact block>
-					<Input readOnly value={`${SITE_URL}/liff?promoLinkId=${record.id}`} />
-					<Button
-						type="default"
-						icon={<CopyText text={getLiffLink(record.id)} />}
-					/>
-				</Space.Compact>
-			),
+			render: (_, record) => <LiffUrl id={record.id} />,
 		},
 	]
 

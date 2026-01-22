@@ -9,7 +9,8 @@ type TOptionResponse = {
 	message: string
 }
 
-const useOptions = ({ form }: { form: FormInstance }) => {
+const useOptions = (props: { form: FormInstance } | undefined = undefined) => {
+	const form = props?.form
 	const apiUrl = useApiUrl('power-funnel')
 	const result = useCustom<TOptionResponse>({
 		url: `${apiUrl}/options`,
@@ -21,7 +22,7 @@ const useOptions = ({ form }: { form: FormInstance }) => {
 
 	const { isSuccess } = result
 	useEffect(() => {
-		if (isSuccess) {
+		if (isSuccess && form) {
 			console.log(result)
 			const values = result.data?.data?.data
 			form.setFieldsValue(values)

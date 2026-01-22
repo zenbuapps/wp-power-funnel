@@ -1,4 +1,4 @@
-import { Button, Form, Tabs, TabsProps } from 'antd'
+import { Button, Form, Spin, Tabs, TabsProps } from 'antd'
 import { memo } from 'react'
 import Line from './Line'
 import Youtube from './Youtube'
@@ -25,30 +25,32 @@ const SettingsPage = () => {
 	const { isLoading: isGetLoading } = useOptions({ form })
 
 	return (
-		<Form
-			className="body-overflow-hidden"
-			layout="vertical"
-			form={form}
-			onFinish={handleSave}
-		>
-			<Tabs
-				tabBarExtraContent={{
-					left: (
-						<Button
-							className="mr-8"
-							type="primary"
-							htmlType="submit"
-							loading={isSaveLoading}
-							disabled={isGetLoading}
-						>
-							儲存
-						</Button>
-					),
-				}}
-				defaultActiveKey="line"
-				items={items}
-			/>
-		</Form>
+		<Spin spinning={isGetLoading}>
+			<Form
+				className="body-overflow-hidden"
+				layout="vertical"
+				form={form}
+				onFinish={handleSave}
+			>
+				<Tabs
+					tabBarExtraContent={{
+						left: (
+							<Button
+								className="mr-8"
+								type="primary"
+								htmlType="submit"
+								loading={isSaveLoading}
+								disabled={isGetLoading}
+							>
+								儲存
+							</Button>
+						),
+					}}
+					defaultActiveKey="line"
+					items={items}
+				/>
+			</Form>
+		</Spin>
 	)
 }
 

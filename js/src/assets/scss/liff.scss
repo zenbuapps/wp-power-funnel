@@ -1,54 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 
 .stroke-3 {
-    fill: none;
-    stroke-width: 12;
-    stroke-linejoin: round;
+  fill: none;
+  stroke-width: 12;
+  stroke-linejoin: round;
 }
 
 .error-icon {
-    .stroke-3 {
-        stroke: #D06079;
-    }
+  .stroke-3 {
+    stroke: #D06079;
+  }
 }
 
 .success-icon {
-    .stroke-3 {
-        stroke: #57b849;
-    }
+  .stroke-3 {
+    stroke: #57b849;
+  }
 }
 
 .animate-circle {
-    stroke-dasharray: 345;
-    stroke-dashoffset: 346;
-    transform-origin: center;
-    transform: rotate(0deg);
-    animation: circle-dash 0.7s 1 cubic-bezier(0.42, 0, 1, 1) forwards;
+  stroke-dasharray: 345;
+  stroke-dashoffset: 346;
+  transform-origin: center;
+  transform: rotate(0deg);
+  animation: circle-dash 0.7s 1 cubic-bezier(0.42, 0, 1, 1) forwards;
 
-    &.animate-infinity {
-        stroke-dasharray: 100 245;
-        stroke-dashoffset: 0;
-        animation: circle-dash 0.7s linear infinite;
-    }
+  &.animate-infinity {
+    stroke-dasharray: 100 245;
+    stroke-dashoffset: 0;
+    animation: circle-dash 0.7s linear infinite;
+  }
 }
 
 
 .animate-check {
-    stroke-linecap: square;
-    stroke-dasharray: 122;
-    stroke-dashoffset: -122;
-    animation: check-dash 0.3s 1 cubic-bezier(0.19, 1, 0.22, 1) 0.65s forwards;
+  stroke-linecap: square;
+  stroke-dasharray: 122;
+  stroke-dashoffset: -122;
+  animation: check-dash 0.3s 1 cubic-bezier(0.19, 1, 0.22, 1) 0.65s forwards;
 }
 
 @keyframes circle-dash {
-    to {
-        stroke-dashoffset: 0;
-        transform: rotate(360deg);
-    }
+  to {
+    stroke-dashoffset: 0;
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes check-dash {
-    to {
-        stroke-dashoffset: 0;
-    }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
