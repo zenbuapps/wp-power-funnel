@@ -59,6 +59,7 @@ final class RegisterActivityViaLine {
 		$activity_id   = $helper->get_activity_id();
 		$identity_id   = $helper->get_identity_id();
 		$promo_link_id = $helper->get_promo_link_id();
+
 		if (!$activity_id || !$identity_id) {
 			throw new \Exception( "活動 ID #{$activity_id} 或用戶 ID {$identity_id} 無法取得" );
 		}
@@ -153,6 +154,9 @@ final class RegisterActivityViaLine {
 		$activity_dto = $registration_dto->activity;
 		$user_dto     = $registration_dto->user;
 
+		$service = MessageService::instance();
+		$service->send_text_message( $registration_dto->user->id, "已收到您 {$registration_dto->activity->title} 的報名");
+
 		$message_tpl_id = $registration_dto->promo_link->get_message_tpl_id( $status );
 		if (!$message_tpl_id) {
 			return;
@@ -163,7 +167,6 @@ final class RegisterActivityViaLine {
 			return;
 		}
 
-		$service = MessageService::instance();
 		$service->send_text_message( $registration_dto->user->id, $replaced_message);
 	}
 }
