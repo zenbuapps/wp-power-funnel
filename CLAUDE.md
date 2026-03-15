@@ -85,7 +85,7 @@ power-funnel/
 │   └── components/                     # 共用元件
 ├── composer.json / package.json
 ├── vite.config.ts / tailwind.config.js
-└── .github/instructions/               # 開發指引
+└── .claude/rules/               # 開發指引
 ```
 
 ## 工作流引擎架構
