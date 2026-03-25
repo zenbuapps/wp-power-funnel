@@ -298,5 +298,5 @@ function ProcessNode({ id, data }) {
 
 ## 進階資源
 
-- 完整 API Props/Hooks/Utils/Types 快查表請見 [api-reference.md](references\api-reference.md)
-- 詳細模式（自訂 Edge、動態節點新增、Undo/Redo、序列化）請見 [patterns.md](references\patterns.md)
+- 完整 API Props/Hooks/Utils/Types 快查表請見 [api-reference.md](references/api-reference.md)
+- 詳細模式（自訂 Edge、動態節點新增、Undo/Redo、序列化）請見 [patterns.md](references/patterns.md)

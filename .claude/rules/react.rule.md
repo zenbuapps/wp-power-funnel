@@ -1,168 +1,132 @@
 ---
-name: "React開發指引"
-description: "Power Funnel React 前端開發規範：React 18、TypeScript、Refine.dev、Ant Design 5、ReactFlow 節點編輯器"
-globs: "js/**/*.{ts,tsx}"
+paths:
+  - "**/*.ts"
+  - "**/*.tsx"
 ---
 
-# React / TypeScript 前端開發指引
+# Power Funnel — React 前端開發規範
 
-## 技術棧
+## 架構概覽
 
-- **React 18** + **TypeScript 5.5**（嚴格模式）
-- **@xyflow/react** — ReactFlow 節點編輯器（待開發）
-- **Refine.dev 4.x** — 資料管理框架（CRUD、資源定義）
-- **Ant Design 5** / **antd-toolkit** — UI 元件庫
-- **React Query v4** (TanStack) — 資料獲取與快取
-- **React Router v7** — 前端路由（HashRouter）
-- **Tailwind CSS**（`tw-` 前綴避免 WordPress 衝突）+ **daisyUI**
-- **Vite** + **@kucrut/vite-for-wp** — 建構工具
-- **Jotai** — 原子化狀態管理
-- **Zod** — Schema 驗證
-- **@line/liff** — LINE LIFF SDK
-- **BlockNote** — 區塊編輯器
+雙 App 架構，共享同一個 Vite 入口（`js/src/main.tsx`）：
 
-## 專案結構
+| App | 掛載點 | 用途 | 路由 |
+|-----|--------|------|------|
+| App1 | `#power_funnel_app` | WP Admin 管理後台 SPA | React Router v7 + Refine.dev |
+| App2 | `#power_funnel_liff_app` | LINE LIFF 報名畫面 | 無路由（單頁） |
 
-```
-js/src/
-├── main.tsx              # React 掛載入口（雙 App）
-├── App1.tsx              # 管理後台 SPA（Refine + HashRouter）
-├── App2.tsx              # LIFF 報名畫面
-├── pages/
-│   ├── PromoLinks/       # 推廣連結管理（List / Edit）
-│   ├── Settings/         # 設定頁面（LINE / YouTube）
-│   └── WorkflowRules/    # ReactFlow 節點編輯器（待開發）
-├── components/           # 跨頁面共用元件
-├── resources/index.tsx   # Refine 資源定義
-├── api/                  # API 層（CRUD 函式）
-├── types/                # TypeScript 型別定義
-│   ├── index.ts          # 主要 export
-│   ├── env.ts            # TEnv 型別
-│   ├── common.ts         # 通用型別
-│   ├── activity.ts       # 活動型別
-│   └── option.ts         # 設定型別
-├── utils/                # 工具函式
-└── assets/scss/          # 全局樣式
-```
+## Refine.dev 使用規範
 
-## 編碼規範
-
-### TypeScript 強制要求
-- 所有元件、函式必須有明確型別定義
-- **禁止使用** `any`；必要時使用 `unknown` 加型別守衛
-- Props 介面使用 `TProps` 命名慣例（如 `TPromoLinkListProps`）
+### DataProvider 配置
 
 ```typescript
-// 正確
-interface TMyComponentProps {
-  id: string
-  onSave: (data: TWorkflowRule) => void
-}
-
-// 禁止
-const MyComponent = (props: any) => {}
-```
-
-### 元件規範
-- 使用函式元件 + Hooks，禁止 Class Component
-- 元件檔案以 PascalCase 命名
-- 每個頁面目錄提供 `index.tsx` 作為 barrel export
-- 頁面元件不超過 300 行，複雜邏輯抽成自訂 Hook
-
-### Tailwind CSS 規範
-部分 class 與 WordPress admin CSS 衝突，必須加 `tw-` 前綴：
-`hidden`, `block`, `flex`, `grid`, `fixed`, `absolute`, `relative`, `overflow-hidden`
-
-```tsx
-// 正確
-<div className="tw-hidden tw-block tw-fixed tw-flex">
-
-// 錯誤（WordPress 會覆蓋）
-<div className="hidden block fixed flex">
-```
-
-### 環境變數存取
-```typescript
-import { useEnv } from 'antd-toolkit'
-import { TEnv } from '@/types'
-
-const { API_URL, NONCE, KEBAB, WORKFLOW_RULE_POST_TYPE } = useEnv<TEnv>()
-```
-
-## Refine.dev 規範
-
-### 資源定義
-在 `js/src/resources/index.tsx` 註冊 CRUD 資源。目前已定義：
-- `promo-links` — LINE 連結管理
-- `workflow-rules` — 自動化（待開發 UI）
-- `settings` — 設定
-
-### Data Provider
-| Provider | 基礎路徑 | 用途 |
-|----------|---------|------|
-| `default` | `/v2/powerhouse` | Powerhouse 通用 API |
-| `power-funnel` | `/power-funnel` | 本外掛專屬 API |
-| `wp-rest` | `/wp/v2` | WordPress Core |
-| `wc-rest` | `/wc/v3` | WooCommerce |
-| `wc-store` | `/wc/store/v1` | WC Store API |
-
-### CRUD Hooks
-```typescript
-import { useList, useOne, useCreate, useUpdate, useDelete } from '@refinedev/core'
-
-const { data, isLoading } = useList({
-  resource: 'workflow-rules',
-  meta: { dataProviderName: 'power-funnel' },
-})
-```
-
-## ReactFlow 節點編輯器規範
-
-> **狀態**: 尚未開始開發，以下為開發時應遵循的規範
-
-### 核心要求
-- 使用 `@xyflow/react`（v12+）
-- 節點類型對應後端 `ENode` enum（10 種）
-- 節點類型分類：`SEND_MESSAGE`（email/sms/line/webhook）和 `ACTION`（其餘）
-- 編輯完成後將節點陣列序列化存入 WorkflowRule CPT 的 `nodes` meta
-
-### 節點資料結構（對應後端 NodeDTO）
-```typescript
-interface TNode {
-  id: string
-  node_definition_id: string           // 對應 ENode value
-  params: Record<string, unknown>      // 節點設定參數
-  match_callback?: string[]            // 執行條件 callback
-  match_callback_params?: Record<string, unknown>
+const dataProviders = {
+    default:        dataProvider(`${API_URL}/v2/powerhouse`, AXIOS_INSTANCE),
+    'wp-rest':      dataProvider(`${API_URL}/wp/v2`, AXIOS_INSTANCE),
+    'wc-rest':      dataProvider(`${API_URL}/wc/v3`, AXIOS_INSTANCE),
+    'wc-store':     dataProvider(`${API_URL}/wc/store/v1`, AXIOS_INSTANCE),
+    'power-funnel': dataProvider(`${API_URL}/${KEBAB}`, AXIOS_INSTANCE),
 }
 ```
 
-### 自訂節點元件
+### Resource 定義
+
+所有 Refine resource 集中定義於 `js/src/resources/index.tsx`，包含 `name`、`list`、`edit`、`create` 等路由配置。
+
+### CRUD 頁面模式
+
+- **List 頁面**：使用 `useTable` hook + Ant Design `Table` 元件
+- **Edit 頁面**：使用 `useForm` hook + Ant Design `Form` 元件
+- 自訂 API 操作使用 `js/src/api/resources/` 中的 helper（create、get、update、delete）
+
+## 環境變數存取
+
+透過 `window.power_funnel_data.env` 注入，使用 `useEnv<TEnv>()` hook 存取：
+
 ```typescript
-import { memo } from 'react'
-import { Handle, Position, NodeProps } from '@xyflow/react'
-
-// nodeTypes 必須在模組頂層宣告，不在元件 render 內
-export const nodeTypes = {
-  email: memo(EmailNode),
-  wait: memo(WaitNode),
-} as const
+const env = useEnv<TEnv>()
+// env.API_URL, env.NONCE, env.KEBAB, env.LIFF_ID, ...
 ```
 
-### 頁面路由
-在 `App1.tsx` 中新增路由：
-```tsx
-<Route path="workflow-rules">
-  <Route index element={<WorkflowRuleList />} />
-  <Route path="edit/:id" element={<WorkflowRuleEdit />} />
-</Route>
+可用變數：`SITE_URL` / `API_URL` / `NONCE` / `KEBAB` / `SNAKE` / `APP_NAME` / `APP1_SELECTOR` / `APP2_SELECTOR` / `LIFF_ID` / `IS_LOCAL` / `CURRENT_USER_ID` / `CURRENT_POST_ID` / `PERMALINK` / `ELEMENTOR_ENABLED` / 各 `*_POST_TYPE`
+
+## TypeScript 規範
+
+### 型別定義
+
+- 所有型別定義集中於 `js/src/types/`
+- Props 型別使用 `TProps` 命名慣例（如 `type TEditProps = { ... }`）
+- 禁止使用 `any`（ESLint warn）
+- 使用 Zod 進行執行期型別驗證
+
+### 型別目錄結構
+
+```
+types/
+├── activity.ts          # 活動相關型別
+├── common.ts            # 通用型別
+├── dataProvider.ts       # DataProvider 型別
+├── env.ts / env.d.ts     # 環境變數型別
+├── option.ts            # 設定型別
+├── wcRestApi/            # WooCommerce REST API 型別
+├── wcStoreApi/           # WooCommerce Store API 型別
+└── wpRestApi/            # WordPress REST API 型別
 ```
 
-## 代碼品質指令
+### 路徑別名
 
-```bash
-pnpm lint         # ESLint 檢查
-pnpm lint:fix     # 自動修復
-pnpm format       # Prettier 格式化 tsx
-pnpm build        # 建構（含型別檢查）
+`@/` 對應 `js/src/`（tsconfig paths + Vite alias）
+
+## 元件規範
+
+- 強制使用 Functional Components，禁止 Class Components
+- 使用 `memo` 優化不常變動的元件
+- UI 套件使用 Ant Design 5（`antd`）+ `antd-toolkit`
+- 圖示使用 `@ant-design/icons` 和 `react-icons`
+
+## Tailwind CSS
+
+- **重要**：`important: '#tw'`，Tailwind 樣式需在 `#tw` 容器內才生效
+- 與 WordPress 衝突的 class 使用 `tw-` 前綴替代：
+  - `tw-hidden`（取代 `hidden`）
+  - `tw-block`（取代 `block`）
+  - `tw-inline`（取代 `inline`）
+  - `tw-fixed`（取代 `fixed`）
+  - `tw-columns-1`、`tw-columns-2`
+- 以上原始 class 已被 `blocklist` 禁用
+
+## LIFF 整合（App2）
+
+```typescript
+import liff from '@line/liff/core'
+await liff.init({ liffId: env.LIFF_ID })
+const profile = await liff.getProfile()
+// saveLiffUserInfo() → POST /power-funnel/liff → 後端觸發 liff_callback → Carousel
 ```
+
+LIFF App 初始化後取得用戶 Profile，將資料與 URL 參數（含 promoLinkId）送至後端。
+
+## 狀態管理
+
+- **全域原子狀態**：Jotai（`jotai`）
+- **伺服器狀態**：TanStack Query v4（`@tanstack/react-query` 4.39.x）
+- **富文本**：BlockNote 0.30（`@blocknote/react`）
+
+## ESLint 規則重點
+
+- 語法風格：`semi: never`、`quotes: single`
+- 禁止未使用的 import（`no-duplicate-imports: error`）
+- `_` 前綴的變數/參數允許未使用
+- `no-shadow: error`（禁止變數遮蔽）
+- 使用 Prettier 自動格式化（tab 縮排，tabWidth: 2）
+
+## 新增前端頁面流程
+
+1. 在 `js/src/pages/` 下建立頁面目錄
+2. 建立 `index.tsx` 作為頁面入口元件
+3. 更新 `js/src/resources/index.tsx` 新增 Refine resource
+4. 更新 `js/src/App1.tsx` 新增路由
+
+## ReactFlow 開發
+
+需要建立或修改 ReactFlow 節點編輯器時，請執行 `/react-flow-master` 載入完整開發指引。
