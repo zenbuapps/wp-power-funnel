@@ -1,0 +1,84 @@
+/**
+ * 工作流節點樣式
+ * BEM 命名慣例：pf-flow-node
+ */
+
+.pf-flow-node {
+	width: 250px;
+	padding: 16px;
+	border-radius: 8px;
+	background: #ffffff;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	border: 2px solid transparent;
+	cursor: pointer;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pf-flow-node:hover {
+	border-color: #1890ff;
+	box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+}
+
+/* 入口節點 - 綠色頂部邊框 */
+.pf-flow-node--entrance {
+	border-top: 3px solid #52c41a;
+}
+
+/* 出口節點 - 綠色底部邊框 */
+.pf-flow-node--exit {
+	border-bottom: 3px solid #52c41a;
+}
+
+/* 動作節點 */
+.pf-flow-node--action {
+	border-left: 3px solid #1890ff;
+}
+
+/* Header */
+.pf-flow-node__header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.pf-flow-node__icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border-radius: 6px;
+	font-size: 14px;
+}
+
+.pf-flow-node__icon--green {
+	color: #52c41a;
+	background: #f6ffed;
+}
+
+.pf-flow-node__icon--blue {
+	color: #1890ff;
+	background: #e6f7ff;
+}
+
+.pf-flow-node__icon--orange {
+	color: #fa8c16;
+	background: #fff7e6;
+}
+
+.pf-flow-node__title {
+	font-size: 14px;
+	font-weight: 600;
+	color: #262626;
+}
+
+/* Metadata */
+.pf-flow-node__meta {
+	margin-top: 8px;
+	font-size: 12px;
+	color: #8c8c8c;
+}
+
+.pf-flow-node__meta-value {
+	color: #595959;
+}

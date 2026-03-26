@@ -1,0 +1,56 @@
+/**
+ * 自訂邊線樣式
+ */
+
+.pf-edge-add-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	background: #ffffff;
+	border: 2px solid #d9d9d9;
+	color: #595959;
+	font-size: 14px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	padding: 0;
+	line-height: 1;
+}
+
+.pf-edge-add-btn:hover {
+	border-color: #1890ff;
+	color: #1890ff;
+	box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+}
+
+/* 節點類型選單 */
+.pf-edge-menu {
+	background: #ffffff;
+	border-radius: 8px;
+	padding: 8px;
+	width: 220px;
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+	max-height: 360px;
+	overflow-y: auto;
+}
+
+.pf-edge-menu__item {
+	display: block;
+	width: 100%;
+	text-align: left;
+	padding: 8px 12px;
+	border: none;
+	background: transparent;
+	border-radius: 4px;
+	font-size: 13px;
+	color: #262626;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
+}
+
+.pf-edge-menu__item:hover {
+	background-color: #e6f7ff;
+	color: #1890ff;
+}
