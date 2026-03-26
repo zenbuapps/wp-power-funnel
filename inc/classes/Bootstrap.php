@@ -21,6 +21,7 @@ final class Bootstrap {
 		Domains\Admin\Entry::register_hooks();
 		Infrastructure\Repositories\PromoLink\Register::register_hooks();
 		Infrastructure\Repositories\Registration\Register::register_hooks();
+		Infrastructure\Repositories\WorkflowRule\Register::register_hooks();
 		Infrastructure\Line\Services\Register::register_hooks();
 		YoutubeService::instance();
 		ActivityService::instance();

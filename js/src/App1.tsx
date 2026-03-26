@@ -2,7 +2,13 @@
 import '@/assets/scss/index.scss'
 
 import { Refine } from '@refinedev/core'
-import { PromoLinksEdit, PromoLinksList, Settings } from '@/pages'
+import {
+	PromoLinksEdit,
+	PromoLinksList,
+	WorkflowRulesList,
+	WorkflowRulesEdit,
+	Settings,
+} from '@/pages'
 
 import { ErrorComponent, ThemedLayoutV2, ThemedSiderV2 } from '@refinedev/antd'
 import '@refinedev/antd/dist/reset.css'
@@ -86,6 +92,10 @@ function App() {
 								<Route path="promo-links">
 									<Route index element={<PromoLinksList />} />
 									<Route path="edit/:id" element={<PromoLinksEdit />} />
+								</Route>
+								<Route path="workflow-rules">
+									<Route index element={<WorkflowRulesList />} />
+									<Route path="edit/:id" element={<WorkflowRulesEdit />} />
 								</Route>
 								<Route path="settings" element={<Settings />} />
 								<Route path="*" element={<ErrorComponent />} />

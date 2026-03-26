@@ -13,9 +13,10 @@ final class Register {
 
 	private const POST_TYPE = 'pf_workflow_rule';
 
-	/** Register hooks */
+	/** 註冊 hooks */
 	public static function register_hooks(): void {
 		\add_action( 'init', [ __CLASS__, 'register_cpt' ] );
+		\add_action( 'init', [ __CLASS__, 'register_meta_fields' ] );
 		\add_filter('power_funnel/workflow_rule/node_definitions', [ __CLASS__, 'register_default_node_definitions' ]);
 	}
 
@@ -27,6 +28,7 @@ final class Register {
 			'publicly_queryable' => true,
 			'show_ui'            => true,
 			'show_in_menu'       => true,
+			'show_in_rest'       => true,
 			'query_var'          => true,
 			'capability_type'    => 'post',
 			'has_archive'        => true,
@@ -39,7 +41,52 @@ final class Register {
 		\register_post_type( self::POST_TYPE, $args );
 	}
 
-	/** Get post_type */
+	/**
+	 * 註冊 meta 欄位，暴露至 REST API
+	 */
+	public static function register_meta_fields(): void {
+		\register_post_meta(
+			self::POST_TYPE,
+			'trigger_point',
+			[
+				'type'              => 'string',
+				'single'            => true,
+				'show_in_rest'      => true,
+				'sanitize_callback' => 'sanitize_text_field',
+				'auth_callback'     => static fn() => \current_user_can( 'edit_posts' ),
+			]
+		);
+
+		\register_post_meta(
+			self::POST_TYPE,
+			'nodes',
+			[
+				'type'          => 'array',
+				'single'        => true,
+				'show_in_rest'  => [
+					'schema' => [
+						'type'  => 'array',
+						'items' => [
+							'type'       => 'object',
+							'properties' => [
+								'node_module'    => [ 'type' => 'string' ],
+								'node_type'      => [ 'type' => 'string' ],
+								'sort'           => [ 'type' => 'integer' ],
+								'args'           => [
+									'type'                 => 'object',
+									'additionalProperties' => true,
+								],
+								'match_callback' => [ 'type' => 'string' ],
+							],
+						],
+					],
+				],
+				'auth_callback' => static fn() => \current_user_can( 'edit_posts' ),
+			]
+		);
+	}
+
+	/** 取得 post_type */
 	public static function post_type(): string {
 		return self::POST_TYPE;
 	}
