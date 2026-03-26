@@ -1,0 +1,545 @@
+# WorkflowRules CRUD API 規格
+# 基於 WordPress REST API，使用 /wp/v2/posts 端點操作 pf_workflow_rule CPT
+# 所有請求需帶 X-WP-Nonce header 做身份驗證
+
+openapi: 3.0.0
+info:
+  title: WorkflowRules CRUD API
+  version: 1.0.0
+  description: |
+    透過 WordPress REST API 管理 WorkflowRule（pf_workflow_rule CPT）。
+    所有端點基於 /wp/v2/posts，透過 post_type 參數區分資源類型。
+    meta_keys[] 查詢參數用於指定需要回傳的 post meta 欄位。
+
+servers:
+  - url: /wp-json
+    description: WordPress REST API
+
+# 安全性：所有端點需 WordPress nonce 驗證
+security:
+  - wpNonce: []
+
+paths:
+
+  # ===== 列表查詢（list-workflow-rules.feature）=====
+  /wp/v2/posts:
+    get:
+      operationId: listWorkflowRules
+      summary: 查詢 WorkflowRules 列表
+      description: |
+        取得所有 pf_workflow_rule 類型的文章列表。
+        對應 Refine.dev useTable 的 getList data provider。
+      parameters:
+        - name: post_type
+          in: query
+          required: true
+          description: 文章類型，固定為 pf_workflow_rule
+          schema:
+            type: string
+            enum: [pf_workflow_rule]
+        - name: meta_keys[]
+          in: query
+          required: false
+          description: 需要回傳的 meta 欄位
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [nodes, trigger_point]
+          style: form
+          explode: true
+        - name: page
+          in: query
+          required: false
+          description: 頁碼（從 1 開始）
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: per_page
+          in: query
+          required: false
+          description: 每頁筆數
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: 查詢成功
+          headers:
+            X-WP-Total:
+              description: 總筆數
+              schema:
+                type: integer
+            X-WP-TotalPages:
+              description: 總頁數
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkflowRuleListItem'
+        '401':
+          description: 未授權的操作（未登入或 nonce 無效）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WPError'
+        '400':
+          description: 必要參數未提供（缺少 post_type）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WPError'
+
+    # ===== 新增（create-workflow-rule.feature）=====
+    post:
+      operationId: createWorkflowRule
+      summary: 新增 WorkflowRule
+      description: |
+        建立一筆空白 draft 狀態的 WorkflowRule。
+        前端使用 Refine.dev useCreate，建立後自動跳轉 Edit 頁面。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkflowRuleRequest'
+      responses:
+        '201':
+          description: 新增成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRuleDetail'
+        '401':
+          description: 未授權的操作
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WPError'
+        '400':
+          description: 必要參數未提供（缺少 post_type 或 status）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WPError'
+
+  # ===== 讀取單筆 / 更新 / 刪除 =====
+  /wp/v2/posts/{id}:
+    # ===== 讀取單筆（edit-workflow-rule.feature 頁面載入）=====
+    get:
+      operationId: getWorkflowRule
+      summary: 讀取單筆 WorkflowRule
+      description: |
+        取得指定 WorkflowRule 的完整資料（含 nodes、trigger_point meta）。
+        對應 Refine.dev useForm 的 getOne data provider。
+      parameters:
+        - $ref: '#/components/parameters/WorkflowRuleId'
+        - name: meta_keys[]
+          in: query
+          required: false
+          description: 需要回傳的 meta 欄位
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [nodes, trigger_point]
+          style: form
+          explode: true
+      responses:
+        '200':
+          description: 查詢成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRuleDetail'
+        '401':
+          description: 未授權的操作
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WPError'
+        '404':
+          description: WorkflowRule 不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WPError'
+
+    # ===== 更新（edit-workflow-rule.feature + save-workflow-rule.feature）=====
+    post:
+      operationId: updateWorkflowRule
+      summary: 更新 WorkflowRule
+      description: |
+        更新 WorkflowRule 的基本資訊（標題、觸發點、狀態）與節點資料。
+        對應 edit-workflow-rule.feature（編輯基本資訊）與
+        save-workflow-rule.feature（儲存完整資料含節點）。
+        前端使用 Refine.dev useForm 的 onFinish 觸發。
+        WordPress REST API 使用 POST method 進行更新（非 PUT/PATCH）。
+      parameters:
+        - $ref: '#/components/parameters/WorkflowRuleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorkflowRuleRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRuleDetail'
+        '401':
+          description: 未授權的操作
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WPError'
+        '404':
+          description: WorkflowRule 不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WPError'
+        '400':
+          description: 必要參數未提供
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WPError'
+
+    # ===== 刪除（delete-workflow-rule.feature）=====
+    delete:
+      operationId: deleteWorkflowRule
+      summary: 刪除 WorkflowRule
+      description: |
+        永久刪除指定的 WorkflowRule（force=true 跳過回收站）。
+        任何狀態（draft / publish）皆可直接刪除。
+        前端使用 Popconfirm 確認後觸發。
+      parameters:
+        - $ref: '#/components/parameters/WorkflowRuleId'
+        - name: force
+          in: query
+          required: true
+          description: 強制永久刪除（跳過回收站）
+          schema:
+            type: boolean
+            enum: [true]
+      responses:
+        '200':
+          description: 刪除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRuleDetail'
+        '401':
+          description: 未授權的操作
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WPError'
+        '404':
+          description: WorkflowRule 不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WPError'
+        '400':
+          description: 必要參數未提供（缺少 ruleId）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WPError'
+
+components:
+
+  # ===== 安全性 =====
+  securitySchemes:
+    wpNonce:
+      type: apiKey
+      in: header
+      name: X-WP-Nonce
+      description: WordPress REST API nonce（wp_create_nonce('wp_rest')）
+
+  # ===== Path Parameters =====
+  parameters:
+    WorkflowRuleId:
+      name: id
+      in: path
+      required: true
+      description: WorkflowRule 的 post ID
+      schema:
+        type: integer
+
+  # ===== Schemas =====
+  schemas:
+
+    # ----- Enums -----
+
+    WorkflowRuleStatus:
+      type: string
+      enum: [draft, publish, trash]
+      description: |
+        WorkflowRule 狀態（對應 EWorkflowRuleStatus）
+        - draft: 草稿
+        - publish: 已發布
+        - trash: 已刪除
+
+    TriggerPoint:
+      type: string
+      enum: ['pf/trigger/registration_created']
+      description: |
+        觸發點（對應 ETriggerPoint）
+        ETriggerPoint 值帶有 'pf/trigger/' 前綴。
+        - pf/trigger/registration_created: 用戶報名後
+
+    NodeModule:
+      type: string
+      enum:
+        - email
+        - sms
+        - line
+        - webhook
+        - wait
+        - wait_until
+        - time_window
+        - yes_no_branch
+        - split_branch
+        - tag_user
+      description: |
+        節點模組（對應 ENode）
+        - email: 傳送 Email
+        - sms: 傳送 SMS
+        - line: 傳送 LINE 訊息
+        - webhook: 發送 Webhook 通知
+        - wait: 等待
+        - wait_until: 等待至
+        - time_window: 等待至時間窗口
+        - yes_no_branch: 是/否分支
+        - split_branch: 分支
+        - tag_user: 標籤用戶
+
+    NodeType:
+      type: string
+      enum: [send_message, action]
+      description: |
+        節點類型分類（對應 ENodeType）
+        - send_message: 傳送訊息類（email, sms, line, webhook）
+        - action: 動作類（wait, wait_until, time_window, yes_no_branch, split_branch, tag_user）
+
+    # ----- Value Objects -----
+
+    NodeDTO:
+      type: object
+      description: |
+        節點資料（對應後端 NodeDTO）。
+        存在 WorkflowRule 的 nodes post meta 中，以 JSON 陣列形式儲存。
+      required:
+        - id
+        - node_definition_id
+      properties:
+        id:
+          type: string
+          description: 節點唯一 ID
+          example: 'node_1'
+        node_definition_id:
+          type: string
+          description: 節點定義 ID（對應 ENode value）
+          example: 'email'
+        params:
+          type: object
+          description: 節點參數（key-value，依節點類型不同）
+          additionalProperties: true
+          example:
+            subject: '歡迎加入'
+            template: 'welcome'
+        match_callback:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+          description: 條件匹配 callback（預設 '__return_true'）
+          default: '__return_true'
+        match_callback_params:
+          type: object
+          description: match_callback 接受的參數
+          additionalProperties: true
+          default: {}
+
+    # ----- Request Bodies -----
+
+    CreateWorkflowRuleRequest:
+      type: object
+      required:
+        - type
+        - status
+      properties:
+        type:
+          type: string
+          enum: [pf_workflow_rule]
+          description: 文章類型，固定為 pf_workflow_rule
+        status:
+          type: string
+          enum: [draft]
+          description: 初始狀態，固定為 draft
+        title:
+          type: string
+          description: 標題（新增時可為空）
+          default: ''
+
+    UpdateWorkflowRuleRequest:
+      type: object
+      description: |
+        更新 WorkflowRule。所有欄位皆為可選，僅送出需要更新的欄位。
+        - 編輯基本資訊時：送 title、status、meta.trigger_point
+        - 儲存完整資料時：送 title、status、meta.trigger_point、meta.nodes
+      properties:
+        title:
+          type: string
+          description: WorkflowRule 標題
+          example: '報名後通知流程'
+        status:
+          $ref: '#/components/schemas/WorkflowRuleStatus'
+        meta:
+          type: object
+          description: Post meta 欄位
+          properties:
+            trigger_point:
+              type: string
+              description: 觸發點值（ETriggerPoint value）
+              example: 'pf/trigger/registration_created'
+            nodes:
+              type: array
+              description: 節點資料陣列
+              items:
+                $ref: '#/components/schemas/NodeDTO'
+
+    # ----- Response Bodies -----
+
+    WorkflowRuleListItem:
+      type: object
+      description: 列表中的 WorkflowRule 摘要資料
+      properties:
+        id:
+          type: integer
+          description: WorkflowRule post ID
+          example: 1
+        title:
+          type: object
+          properties:
+            rendered:
+              type: string
+              description: 已渲染的標題
+              example: '報名後通知流程'
+        status:
+          $ref: '#/components/schemas/WorkflowRuleStatus'
+        type:
+          type: string
+          description: 文章類型
+          example: 'pf_workflow_rule'
+        date:
+          type: string
+          format: date-time
+          description: 建立日期
+          example: '2026-03-20T10:00:00'
+        modified:
+          type: string
+          format: date-time
+          description: 最後修改日期
+          example: '2026-03-24T14:30:00'
+        meta:
+          type: object
+          properties:
+            trigger_point:
+              type: string
+              description: 觸發點
+              example: 'pf/trigger/registration_created'
+            nodes:
+              type: array
+              description: 節點資料（用於計算 nodes_count）
+              items:
+                $ref: '#/components/schemas/NodeDTO'
+
+    WorkflowRuleDetail:
+      type: object
+      description: |
+        WorkflowRule 完整資料（含 meta）。
+        用於 getOne（Edit 頁載入）、create、update 的回應。
+      properties:
+        id:
+          type: integer
+          description: WorkflowRule post ID
+          example: 1
+        title:
+          type: object
+          properties:
+            rendered:
+              type: string
+              description: 已渲染的標題
+              example: '報名後通知流程'
+            raw:
+              type: string
+              description: 原始標題
+              example: '報名後通知流程'
+        status:
+          $ref: '#/components/schemas/WorkflowRuleStatus'
+        type:
+          type: string
+          description: 文章類型
+          example: 'pf_workflow_rule'
+        date:
+          type: string
+          format: date-time
+          description: 建立日期
+          example: '2026-03-20T10:00:00'
+        modified:
+          type: string
+          format: date-time
+          description: 最後修改日期
+          example: '2026-03-24T14:30:00'
+        meta:
+          type: object
+          properties:
+            trigger_point:
+              type: string
+              description: 觸發點
+              example: 'pf/trigger/registration_created'
+            nodes:
+              type: array
+              description: 節點資料陣列
+              items:
+                $ref: '#/components/schemas/NodeDTO'
+
+    # ----- Error -----
+
+    WPError:
+      type: object
+      description: WordPress REST API 標準錯誤格式
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: string
+          description: 錯誤代碼
+          example: 'rest_forbidden'
+        message:
+          type: string
+          description: 錯誤訊息
+          example: '未授權的操作'
+        data:
+          type: object
+          properties:
+            status:
+              type: integer
+              description: HTTP 狀態碼
+              example: 401

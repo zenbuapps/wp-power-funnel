@@ -1,0 +1,25 @@
+[ACTIVITY] WorkflowRules CRUD 管理流程
+[ACTOR] 管理員 -> {specs/actors/admin.md}
+
+[STEP:1] @管理員 {features/workflow-rule/list-workflow-rules.feature}
+  管理員在列表頁查看所有 WorkflowRules（表格欄位：標題、觸發點、狀態、節點數量、建立日期、最後修改日期、修改者）
+
+[STEP:2] @管理員 {features/workflow-rule/create-workflow-rule.feature}
+  管理員點擊新增按鈕，useCreate 建立空白 draft WorkflowRule，建立後自動跳轉 Edit 頁面（同 PromoLinks 模式）
+
+[STEP:3] @管理員 {features/workflow-rule/edit-workflow-rule.feature}
+  管理員在 Edit 頁編輯 WorkflowRule 基本資訊（上方表單：標題、觸發點選擇、狀態切換；下方 React Flow 全寬畫布，垂直分割佈局）
+
+[STEP:4] @管理員 {features/workflow-rule/configure-flow-nodes.feature}
+  管理員在 React Flow 畫布上配置節點（透過 Edge 上的 + 按鈕點擊彈出節點類型選單：EMAIL, SMS, LINE, WEBHOOK, WAIT, WAIT_UNTIL, TIME_WINDOW, YES_NO_BRANCH, SPLIT_BRANCH, TAG_USER）
+
+[DECISION:4a] 管理員點擊節點後的行為
+  [BRANCH:4a:點擊節點] @管理員 {specs/ui/node-drawer.md}
+    開啟右側抽屜 (Drawer) 顯示該節點的設定表單（不遮擋畫布，可同時看到畫布和設定）
+[MERGE:4a]
+
+[STEP:5] @管理員 {features/workflow-rule/save-workflow-rule.feature}
+  管理員手動點擊儲存按鈕儲存 WorkflowRule（沿用 Refine Edit 的 useForm + onFinish 模式，含基本資訊與節點資料）
+
+[STEP:6] @管理員 {features/workflow-rule/delete-workflow-rule.feature}
+  管理員刪除 WorkflowRule（Popconfirm 確認對話框，任何狀態皆可直接刪除，無需先改為 draft）
