@@ -11,7 +11,6 @@ import {
 	Form,
 	Input,
 	InputNumber,
-	Space,
 	Spin,
 } from 'antd'
 import { TActivity } from '@/types/activity'
@@ -115,13 +114,8 @@ const EditComponent = () => {
 							<Item name={['keyword']} label="關鍵字">
 								<Input allowClear />
 							</Item>
-							<Item label="顯示最近 N 天的活動">
-								<Space.Compact block>
-									<Item name={['last_n_days']} noStyle>
-										<InputNumber className="w-full" min={0} />
-									</Item>
-									<Space.Addon>天</Space.Addon>
-								</Space.Compact>
+							<Item name={['last_n_days']} label="顯示最近 N 天的活動">
+								<InputNumber className="w-full" min={0} addonAfter="天" />
 							</Item>
 							<Button
 								color="primary"
