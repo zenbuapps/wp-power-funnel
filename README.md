@@ -130,6 +130,29 @@ add_filter('power_funnel/workflow_rule/node_definitions', function(array $defini
 
 ### 擴充觸發點
 
+工作流引擎的「觸發條件」下拉選單透過 REST API 動態載入，資料來源為 `Repository::get_trigger_points()`。
+第三方開發者可透過 `power_funnel/workflow_rule/trigger_points` filter 新增自訂觸發點，新增後會自動出現在管理介面的下拉選單中。
+
+**REST API**
+
+```
+GET /wp-json/power-funnel/trigger-points
+```
+
+回應格式：
+
+```json
+{
+  "code": "operation_success",
+  "message": "操作成功",
+  "data": [
+    { "hook": "pf/trigger/registration_created", "name": "用戶報名後" }
+  ]
+}
+```
+
+**透過 Filter 新增觸發點**
+
 ```php
 add_filter('power_funnel/workflow_rule/trigger_points', function(array $trigger_points): array {
     $trigger_points['pf/trigger/my_event'] = new TriggerPointDTO([
@@ -139,6 +162,16 @@ add_filter('power_funnel/workflow_rule/trigger_points', function(array $trigger_
     return $trigger_points;
 });
 ```
+
+**觸發工作流**
+
+新增觸發點後，在適當的時機呼叫 `do_action` 觸發工作流：
+
+```php
+do_action('pf/trigger/my_event', $context);
+```
+
+`$context` 為傳遞給工作流節點的參數陣列，可包含 `user_id`、`post_id` 等業務資料。
 
 ## Custom Post Types
 

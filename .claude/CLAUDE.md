@@ -67,6 +67,37 @@ WorkflowRule (設計時) → trigger_point 觸發 → Workflow (執行時)
 - **WorkflowResultDTO 結果碼**：200=成功、301=跳過（match_callback 不符）、500=失敗
 - **WaitNode**：使用 Action Scheduler (`as_schedule_single_action`) 排程延遲，到期後重新觸發 `power_funnel/workflow/running`
 - **ParamHelper**：處理 `context` 參數替換和模板字串取代
+- **RecursionGuard**：靜態深度計數器，`MAX_DEPTH=3`，防止工作流觸發工作流的無限遞迴；超過時呼叫 `Repository::create_failed_from_recursion_exceeded()`
+- **TriggerPointService**：集中橋接所有業務域事件到對應 `pf/trigger/*` hook，避免觸發邏輯散落各處
+- **ActivitySchedulerService**：整合 Action Scheduler 支援時間型觸發點（ACTIVITY_STARTED、ACTIVITY_BEFORE_START）
+
+### trigger_point meta 格式（v2，向下相容）
+
+```json
+{ "hook": "pf/trigger/activity_before_start", "params": { "before_minutes": 30 } }
+```
+
+舊版純字串格式（僅含 hook 名稱）仍受支援，由 `WorkflowRuleDTO::parse_trigger_point_meta()` 自動解析。
+
+### ETriggerPoint 觸發點清單
+
+| 類別 | case | hook value | 說明 |
+|------|------|-----------|------|
+| P0 報名狀態 | `REGISTRATION_CREATED` | `pf/trigger/registration_created` | 已棄用，保留相容 |
+| P0 報名狀態 | `REGISTRATION_APPROVED` | `pf/trigger/registration_approved` | 報名審核通過 |
+| P0 報名狀態 | `REGISTRATION_REJECTED` | `pf/trigger/registration_rejected` | 報名被拒絕 |
+| P0 報名狀態 | `REGISTRATION_CANCELLED` | `pf/trigger/registration_cancelled` | 報名取消 |
+| P0 報名狀態 | `REGISTRATION_FAILED` | `pf/trigger/registration_failed` | 報名失敗 |
+| P1 LINE 互動 | `LINE_FOLLOWED` | `pf/trigger/line_followed` | 用戶關注 LINE 官方帳號 |
+| P1 LINE 互動 | `LINE_UNFOLLOWED` | `pf/trigger/line_unfollowed` | 用戶取消關注 |
+| P1 LINE 互動 | `LINE_MESSAGE_RECEIVED` | `pf/trigger/line_message_received` | 收到 LINE 訊息 |
+| P2 工作流引擎 | `WORKFLOW_COMPLETED` | `pf/trigger/workflow_completed` | 工作流完成 |
+| P2 工作流引擎 | `WORKFLOW_FAILED` | `pf/trigger/workflow_failed` | 工作流失敗 |
+| P3 活動時間 | `ACTIVITY_STARTED` | `pf/trigger/activity_started` | 活動開始時（Action Scheduler） |
+| P3 活動時間 | `ACTIVITY_BEFORE_START` | `pf/trigger/activity_before_start` | 活動開始前 N 分鐘（params.before_minutes） |
+| P3 活動時間 | `ACTIVITY_ENDED` | `pf/trigger/activity_ended` | 枚舉存根，目前無實作 |
+| P3 用戶行為 | `USER_TAGGED` | `pf/trigger/user_tagged` | 用戶被貼標籤（由 TagUserNode 呼叫） |
+| P3 用戶行為 | `PROMO_LINK_CLICKED` | `pf/trigger/promo_link_clicked` | 枚舉存根，目前無實作 |
 
 ## Hook 命名慣例
 
@@ -79,7 +110,10 @@ power_funnel/registration/{status}           # 報名狀態變更 action（pendi
 power_funnel/registration/can_register       # filter: 是否允許報名
 power_funnel/liff_callback                   # LIFF 回調 action
 power_funnel/line/webhook/{type}/{action}    # LINE webhook action（如 postback/register）
+power_funnel/line/webhook/{type}             # LINE webhook type-only hook（WebhookService 新增，供 TriggerPointService 監聽）
 pf/trigger/{trigger_name}                    # 觸發工作流的 action（ETriggerPoint enum）
+power_funnel/activity_trigger/started        # ActivitySchedulerService：活動開始 Action Scheduler hook
+power_funnel/activity_trigger/before_start   # ActivitySchedulerService：活動開始前 Action Scheduler hook
 ```
 
 ## 前端環境變數
@@ -103,7 +137,7 @@ pf/trigger/{trigger_name}                    # 觸發工作流的 action（ETrig
 ## 開發流程
 
 1. **新增節點定義** → 繼承 `BaseNodeDefinition`，在 `WorkflowRule\Register::register_default_node_definitions` 注入
-2. **新增觸發點** → `ETriggerPoint` enum 加 case，適當時機 `do_action`
+2. **新增觸發點** → `ETriggerPoint` enum 加 case，在 `TriggerPointService` 加對應監聽器並 `do_action`；若為時間型觸發點則在 `ActivitySchedulerService` 加排程邏輯
 3. **新增 REST API** → `Applications/` 繼承 `ApiBase`，在 `Bootstrap::register_hooks()` 調用
 4. **新增前端頁面** → `js/src/pages/` 新增，更新 `resources/index.tsx` 和 `App1.tsx` 路由
 
@@ -122,6 +156,7 @@ pf/trigger/{trigger_name}                    # 觸發工作流的 action（ETrig
 5. PHPStan bootstrapFiles 包含本機硬編碼路徑（`C:\Users\User\DEV\...`）
 6. `@typescript-eslint/no-explicit-any` 設為 `warn` 而非 `error`
 7. ReactFlow 節點編輯器 UI 尚未開始開發（核心待辦）
+8. `ETriggerPoint::ACTIVITY_ENDED` 和 `ETriggerPoint::PROMO_LINK_CLICKED` 目前僅為枚舉存根，無實際觸發機制（無結束時間資料來源 / 無點擊追蹤機制）
 
 ## 相關 SKILL
 

@@ -1,4 +1,4 @@
-@ignore @query
+@query
 Feature: 查詢觸發條件列表
 
   Background:
