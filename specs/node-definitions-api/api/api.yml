@@ -1,0 +1,277 @@
+# Node Definitions API 規格
+# 查詢所有已註冊的 NodeDefinition（含 form_fields schema），供 WorkflowRule 編輯頁面使用
+# 資料來源：Repository::get_node_definitions()，經過 apply_filters 允許第三方擴充
+# 參考模式：TriggerPointApi (GET /trigger-points)
+
+openapi: 3.0.0
+info:
+  title: Node Definitions API
+  version: 1.0.0
+  description: |
+    查詢 WorkflowRule 可用的節點定義清單。
+    後端從 BaseNodeDefinition 子類別取得預設節點定義（含 form_fields schema），
+    再經 apply_filters('power_funnel/workflow_rule/node_definitions') 合併第三方擴充。
+    前端用於：
+    1. CustomEdge 節點選單（動態渲染節點清單）
+    2. NodeDrawer DynamicNodeForm（根據 form_fields 動態生成表單）
+
+servers:
+  - url: /wp-json/power-funnel
+    description: Power Funnel 自訂 REST API
+
+security:
+  - wpNonce: []
+
+paths:
+
+  /node-definitions:
+    get:
+      operationId: getNodeDefinitions
+      summary: 查詢節點定義列表
+      description: |
+        回傳所有已註冊的 NodeDefinition（含預設 + 第三方透過 filter 擴充的）。
+        無需任何查詢參數，直接回傳完整列表。
+        對應後端 Repository::get_node_definitions()。
+      responses:
+        '200':
+          description: 查詢成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeDefinitionsResponse'
+        '401':
+          description: 未授權的操作（未登入或 nonce 無效）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+
+  securitySchemes:
+    wpNonce:
+      type: apiKey
+      in: header
+      name: X-WP-Nonce
+      description: WordPress REST API nonce（wp_create_nonce('wp_rest')）
+
+  schemas:
+
+    FormFieldType:
+      type: string
+      description: 表單欄位類型，對應前端 Ant Design 元件
+      enum:
+        - text
+        - number
+        - select
+        - textarea
+        - template_editor
+        - switch
+        - date
+        - json
+
+    NodeType:
+      type: string
+      description: 節點分類（對應 ENodeType enum）
+      enum:
+        - send_message
+        - action
+
+    SelectOption:
+      type: object
+      description: select 類型欄位的選項
+      required:
+        - value
+        - label
+      properties:
+        value:
+          type: string
+          description: 選項值
+          example: 'hours'
+        label:
+          type: string
+          description: 選項顯示文字
+          example: '小時'
+
+    ValidationRule:
+      type: object
+      description: 額外驗證規則
+      required:
+        - rule
+        - value
+        - message
+      properties:
+        rule:
+          type: string
+          description: 驗證規則名稱
+          example: 'min'
+        value:
+          description: 驗證規則值
+          example: 1
+        message:
+          type: string
+          description: 驗證失敗訊息
+          example: '等待時間必須大於 0'
+
+    DependsOn:
+      type: object
+      description: 條件顯示規則
+      required:
+        - field
+        - operator
+        - value
+      properties:
+        field:
+          type: string
+          description: 依賴的欄位 name
+          example: 'message_tpl_id'
+        operator:
+          type: string
+          description: 比較運算子
+          enum:
+            - equals
+            - not_equals
+            - empty
+            - not_empty
+          example: 'empty'
+        value:
+          description: 比較值
+          example: ''
+
+    FormField:
+      type: object
+      description: 表單欄位定義（對應擴充後的 Powerhouse FormFieldDTO）
+      required:
+        - name
+        - label
+        - type
+        - required
+        - sort
+      properties:
+        name:
+          type: string
+          description: 欄位 key，對應 NodeDTO.args 的 key
+          example: 'recipient'
+        label:
+          type: string
+          description: 顯示標籤
+          example: '收件人'
+        type:
+          $ref: '#/components/schemas/FormFieldType'
+        required:
+          type: boolean
+          description: 是否必填
+          example: true
+        default_value:
+          description: 預設值（型別依欄位類型而異）
+          example: ''
+        placeholder:
+          type: string
+          description: placeholder 文字
+          example: 'user@example.com'
+        description:
+          type: string
+          description: 欄位說明（tooltip）
+          example: '輸入收件人的 Email 地址'
+        options:
+          type: array
+          description: select 類型的選項
+          items:
+            $ref: '#/components/schemas/SelectOption'
+        validation:
+          type: array
+          description: 額外驗證規則
+          items:
+            $ref: '#/components/schemas/ValidationRule'
+        sort:
+          type: integer
+          description: 欄位排序
+          example: 0
+        depends_on:
+          type: array
+          description: 條件顯示規則
+          items:
+            $ref: '#/components/schemas/DependsOn'
+
+    NodeDefinition:
+      type: object
+      description: 節點定義（對應 BaseNodeDefinition::to_array()）
+      required:
+        - id
+        - name
+        - description
+        - icon
+        - type
+        - form_fields
+      properties:
+        id:
+          type: string
+          description: 節點唯一識別碼（對應 ENode value）
+          example: 'email'
+        name:
+          type: string
+          description: 節點名稱
+          example: '傳送 Email'
+        description:
+          type: string
+          description: 節點描述
+          example: '傳送 Email'
+        icon:
+          type: string
+          description: 節點圖示 SVG URL
+          example: 'https://example.com/wp-content/plugins/power-funnel/inc/assets/icons/email.svg'
+        type:
+          $ref: '#/components/schemas/NodeType'
+        form_fields:
+          type: array
+          description: 節點表單欄位定義
+          items:
+            $ref: '#/components/schemas/FormField'
+
+    NodeDefinitionsResponse:
+      type: object
+      description: |
+        節點定義列表回應。
+        遵循 Power Funnel API 回應格式。
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: string
+          description: 操作結果代碼
+          example: 'operation_success'
+        message:
+          type: string
+          description: 操作結果訊息
+          example: '操作成功'
+        data:
+          type: array
+          description: 節點定義列表
+          items:
+            $ref: '#/components/schemas/NodeDefinition'
+
+    Error:
+      type: object
+      description: 錯誤回應格式
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: string
+          description: 錯誤代碼
+          example: 'rest_forbidden'
+        message:
+          type: string
+          description: 錯誤訊息
+          example: '未授權的操作'
+        data:
+          type: object
+          properties:
+            status:
+              type: integer
+              description: HTTP 狀態碼
+              example: 401

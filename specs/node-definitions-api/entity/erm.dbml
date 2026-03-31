@@ -1,0 +1,55 @@
+// Node Definitions API - Entity Model
+// 注意：NodeDefinition 和 FormFieldDTO 並非持久化到資料庫的實體，
+// 而是 PHP runtime 物件，透過 filter hook 註冊。
+// 此 DBML 僅作為概念模型文件化其結構。
+
+Enum node_type {
+  send_message  [note: '發送訊息類節點（email/sms/line/webhook）']
+  action        [note: '動作類節點（wait/wait_until/time_window/yes_no_branch/split_branch/tag_user）']
+}
+
+Enum form_field_type {
+  text             [note: '對應 Ant Design Input']
+  number           [note: '對應 Ant Design InputNumber']
+  select           [note: '對應 Ant Design Select']
+  textarea         [note: '對應 Ant Design Input.TextArea']
+  template_editor  [note: '對應 BlockNoteEditor']
+  switch           [note: '對應 Ant Design Switch']
+  date             [note: '對應 Ant Design DatePicker']
+  json             [note: '對應 Input.TextArea + JSON 驗證']
+}
+
+Enum depends_on_operator {
+  equals     [note: '等於']
+  not_equals [note: '不等於']
+  empty      [note: '為空']
+  not_empty  [note: '不為空']
+}
+
+// 概念模型：NodeDefinition（對應 BaseNodeDefinition 子類別）
+Table node_definitions {
+  id          varchar  [pk, note: '節點唯一識別碼，對應 ENode value']
+  name        varchar  [not null, note: '節點名稱']
+  description varchar  [not null, note: '節點描述']
+  icon        varchar  [not null, note: 'SVG URL']
+  type        node_type [not null, note: '節點分類']
+
+  Note: '節點定義（runtime 物件，非持久化）。對應 BaseNodeDefinition 子類別，透過 power_funnel/workflow_rule/node_definitions filter hook 註冊。'
+}
+
+// 概念模型：FormFieldDTO（對應擴充後的 Powerhouse FormFieldDTO）
+Table form_fields {
+  name          varchar         [pk, note: '欄位 key，對應 NodeDTO.args 的 key']
+  node_id       varchar         [not null, ref: > node_definitions.id, note: '所屬節點']
+  label         varchar         [not null, note: '顯示標籤']
+  type          form_field_type [not null, note: '欄位類型']
+  required      boolean         [not null, default: false, note: '是否必填']
+  default_value varchar         [note: '預設值']
+  placeholder   varchar         [note: 'placeholder 文字']
+  description   varchar         [note: '欄位說明（tooltip）']
+  sort          integer         [not null, default: 0, note: '欄位排序']
+
+  Note: '表單欄位定義（runtime 物件，非持久化）。對應擴充後的 Powerhouse FormFieldDTO。'
+}
+
+Ref: form_fields.node_id > node_definitions.id

@@ -1,0 +1,15 @@
+[ACTIVITY] Node Definitions API 驅動節點選單與表單
+[ACTOR] Admin -> {specs/actors/admin.md}
+[ACTOR] System -> {specs/actors/system.md}
+
+[STEP:1] @System {features/node-definition/register-node-definitions.feature}
+  註冊 10 種預設 NodeDefinition（含 form_fields schema）至 filter hook
+
+[STEP:2] @Admin {features/node-definition/query-node-definitions.feature}
+  管理員透過 REST API 查詢所有已註冊的 NodeDefinition
+
+[STEP:3] @Admin {specs/ui/node-menu.md}
+  前端根據 API 回傳的 NodeDefinition 清單動態渲染 CustomEdge 節點選單
+
+[STEP:4] @Admin {specs/ui/node-drawer-form.md}
+  管理員點選節點後，前端以 DynamicNodeForm 根據 form_fields schema 動態渲染 Drawer 表單（完全取代 EmailForm、WaitForm、DefaultForm）

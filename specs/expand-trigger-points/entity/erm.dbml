@@ -1,0 +1,54 @@
+// Expand Trigger Points - Entity Model
+// 此功能主要擴展 ETriggerPoint PHP enum，不涉及新的資料庫 Table。
+// 以下記錄運行時資料結構供參考。
+
+// ETriggerPoint enum 擴展後的完整值域
+// 所有值皆以 'pf/trigger/' 為前綴
+Enum trigger_point_hook {
+  'pf/trigger/registration_created'    [note: '用戶報名後（既有）']
+  'pf/trigger/registration_approved'   [note: '報名審核通過後（P0）— 對應 post_status=success']
+  'pf/trigger/registration_rejected'   [note: '報名被拒絕後（P0）— 對應 post_status=rejected']
+  'pf/trigger/registration_cancelled'  [note: '報名取消後（P0）— 對應 post_status=cancelled']
+  'pf/trigger/registration_failed'     [note: '報名失敗後（P0）— 對應 post_status=failed']
+  'pf/trigger/line_followed'           [note: 'LINE 加入好友後（P1）— follow webhook event']
+  'pf/trigger/line_unfollowed'         [note: 'LINE 封鎖後（P1）— unfollow webhook event']
+  'pf/trigger/line_message_received'   [note: 'LINE 收到訊息後（P1）— message webhook event，不做 rate limiting']
+  'pf/trigger/workflow_completed'      [note: '工作流完成後（P2）— 需遞迴防護 max_depth=3']
+  'pf/trigger/workflow_failed'         [note: '工作流失敗後（P2）— 需遞迴防護 max_depth=3']
+  'pf/trigger/activity_started'        [note: '活動開始時（P3）— Action Scheduler 排程']
+  'pf/trigger/activity_ended'          [note: '活動結束時（P3）— 僅定義 enum case，暫不實作觸發']
+  'pf/trigger/activity_before_start'   [note: '活動開始前提醒（P3）— before_minutes 由 WorkflowRule meta 配置']
+  'pf/trigger/user_tagged'             [note: '用戶被加標籤後（P3）— tag_user 節點完成後觸發']
+  'pf/trigger/promo_link_clicked'      [note: '推廣連結被點擊後（P3）— 僅定義 enum case，暫不實作觸發']
+
+  Note: '觸發點 hook name。預設值來自 ETriggerPoint enum，可透過 apply_filters 擴充。'
+}
+
+// 各觸發點的 context 結構（運行時資料，非持久化）
+
+// P0：報名狀態變更觸發點 context
+// context_callable 傳入 registration post ID，執行後產生以下結構
+// {registration_id, identity_id, identity_provider, activity_id, promo_link_id}
+
+// P1：LINE 互動事件觸發點 context
+// context_callable 傳入 LINE Event 物件，執行後產生以下結構
+// LINE_FOLLOWED / LINE_UNFOLLOWED: {line_user_id, event_type}
+// LINE_MESSAGE_RECEIVED: {line_user_id, event_type, message_text}
+
+// P2：工作流引擎事件觸發點 context
+// context_callable 傳入 workflow post ID，執行後產生以下結構
+// {workflow_id, workflow_rule_id, trigger_point}
+// 遞迴防護：觸發鏈深度上限 max_depth=3，超過時建立 status=failed 的 Workflow 實例
+
+// P3：活動時間事件觸發點 context
+// context_callable 傳入 activity ID，執行後產生以下結構
+// ACTIVITY_STARTED: {activity_id, activity_title, scheduled_time}
+// ACTIVITY_BEFORE_START: {activity_id, activity_title, scheduled_time, before_minutes}
+
+// P3：用戶行為事件觸發點 context
+// USER_TAGGED: {user_id, tag_name}
+
+// WorkflowRule trigger_point meta 結構擴展
+// 原結構：string（如 'pf/trigger/registration_created'）
+// 新結構：支援物件格式 {hook: string, params: {before_minutes?: int}}
+// 向下相容：字串格式仍有效，系統自動轉換為 {hook: string, params: {}}

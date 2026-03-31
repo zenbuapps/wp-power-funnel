@@ -1,0 +1,67 @@
+[ACTIVITY] 擴展工作流觸發時機點
+[ACTOR] System -> {specs/actors/system.md}
+[ACTOR] Admin -> {specs/actors/admin.md}
+
+# P0：報名狀態變更觸發點（Registration Lifecycle）
+# 系統在報名狀態轉換時觸發對應的 pf/trigger/ hook
+
+[STEP:1] @System {features/trigger-point/register-trigger-points.feature}
+# 系統啟動時將所有新增的 ETriggerPoint enum cases 註冊到觸發點列表
+
+[STEP:2] @System {features/trigger-point/fire-registration-approved.feature}
+# 報名狀態轉為 success 時，系統觸發 REGISTRATION_APPROVED
+
+[STEP:3] @System {features/trigger-point/fire-registration-rejected.feature}
+# 報名狀態轉為 rejected 時，系統觸發 REGISTRATION_REJECTED
+
+[STEP:4] @System {features/trigger-point/fire-registration-cancelled.feature}
+# 報名狀態轉為 cancelled 時，系統觸發 REGISTRATION_CANCELLED
+
+[STEP:5] @System {features/trigger-point/fire-registration-failed.feature}
+# 報名狀態轉為 failed 時，系統觸發 REGISTRATION_FAILED
+
+# P1：LINE 互動事件觸發點
+
+[STEP:6] @System {features/trigger-point/fire-line-followed.feature}
+# 收到 LINE follow webhook 時，系統觸發 LINE_FOLLOWED
+
+[STEP:7] @System {features/trigger-point/fire-line-unfollowed.feature}
+# 收到 LINE unfollow webhook 時，系統觸發 LINE_UNFOLLOWED
+
+[STEP:8] @System {features/trigger-point/fire-line-message-received.feature}
+# 收到 LINE message webhook 時，系統觸發 LINE_MESSAGE_RECEIVED（每條訊息都觸發，不做 rate limiting，未來有需求可擴展 throttle 機制）
+
+# P2：工作流引擎事件觸發點
+
+[STEP:9] @System {features/trigger-point/fire-workflow-completed.feature}
+# Workflow 狀態轉為 completed 時，系統觸發 WORKFLOW_COMPLETED
+
+[STEP:10] @System {features/trigger-point/fire-workflow-failed.feature}
+# Workflow 狀態轉為 failed 時，系統觸發 WORKFLOW_FAILED
+
+[STEP:11] @System {features/workflow/recursion-guard.feature}
+# 工作流觸發工作流時的遞迴防護：max_depth=3，超過時建立 status=failed 的 Workflow 實例 + 記 error log
+
+# P3：活動時間事件觸發點（排程觸發）
+
+[STEP:12] @System {features/trigger-point/fire-activity-started.feature}
+# 活動開始時間到達時，系統觸發 ACTIVITY_STARTED（使用 Action Scheduler as_schedule_single_action 排程，活動同步時建立排程，更新時取消舊的重新排）
+
+[STEP:13] @System {features/trigger-point/fire-activity-ended.feature}
+# ACTIVITY_ENDED 僅定義 ETriggerPoint enum case（前端列表可見），暫不實作排程觸發邏輯，等有結束時間資料來源後再補
+
+[STEP:14] @System {features/trigger-point/fire-activity-before-start.feature}
+# 活動開始前 N 分鐘，系統觸發 ACTIVITY_BEFORE_START（N 由 WorkflowRule 的 trigger_point meta 中的 before_minutes 參數配置，trigger_point meta 結構從字串擴展為物件 {hook, params}）
+
+# P3：用戶行為事件觸發點
+
+[STEP:15] @System {features/trigger-point/fire-user-tagged.feature}
+# 用戶被加標籤後，系統觸發 USER_TAGGED（在 tag_user 節點的 NodeDefinition.execute() 完成後 do_action 觸發，目前只捕捉工作流節點加的標籤）
+
+[STEP:16] @System {features/trigger-point/fire-promo-link-clicked.feature}
+# PROMO_LINK_CLICKED 僅定義 ETriggerPoint enum case（前端列表可見），暫不實作觸發邏輯，等點擊追蹤機制建立後再補
+
+# 所有觸發點在前端的呈現（已有 API，新增後自動生效）
+
+[STEP:17] @Admin {features/trigger-point/query-expanded-trigger-points.feature}
+# 管理員查詢觸發條件列表時，應看到所有新增的觸發點

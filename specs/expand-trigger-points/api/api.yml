@@ -1,0 +1,103 @@
+# Expand Trigger Points - API 規格
+# 此功能主要是後端 PHP hook 擴展，不新增 REST API endpoint。
+# 觸發點列表的 GET /trigger-points API 已在 trigger-points-api spec 中定義。
+# 新增的觸發點會自動透過 ETriggerPoint enum + apply_filters 出現在既有 API 回應中。
+#
+# 此檔案僅記錄與擴展觸發點相關的 API 影響說明。
+
+openapi: 3.0.0
+info:
+  title: Expand Trigger Points API Impact
+  version: 1.0.0
+  description: |
+    擴展工作流觸發時機點。此功能不新增 REST API endpoint，
+    但會影響既有 GET /trigger-points API 的回應內容：
+    - 回應的觸發點列表從 1 個增加到 16 個
+    - 每個觸發點仍遵循 {hook, name} 格式
+    - 前端不需修改，動態取得列表後自動顯示新觸發點
+
+    此外，WorkflowRule 的 trigger_point meta 結構將從單一字串
+    擴展為支援物件格式 {hook, params}（向下相容字串格式），
+    以支援 ACTIVITY_BEFORE_START 的 before_minutes 參數配置。
+
+servers:
+  - url: /wp-json/power-funnel
+    description: Power Funnel REST API
+
+paths:
+  /trigger-points:
+    get:
+      operationId: getTriggerPoints
+      summary: 查詢觸發條件列表（既有 API，回應內容擴展）
+      description: |
+        已在 trigger-points-api spec 中定義。
+        擴展後回應將包含 16 個觸發點（原 1 個 + 新增 15 個）。
+      responses:
+        '200':
+          description: 查詢成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriggerPointsResponse'
+        '401':
+          description: 未授權的操作
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    TriggerPoint:
+      type: object
+      required:
+        - hook
+        - name
+      properties:
+        hook:
+          type: string
+          description: 觸發點的 hook name
+          example: 'pf/trigger/registration_approved'
+        name:
+          type: string
+          description: 觸發點的顯示名稱
+          example: '報名審核通過後'
+
+    TriggerPointsResponse:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: string
+          example: 'operation_success'
+        message:
+          type: string
+          example: '操作成功'
+        data:
+          type: array
+          description: 觸發條件列表（擴展後共 16 個）
+          items:
+            $ref: '#/components/schemas/TriggerPoint'
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+        - data
+      properties:
+        code:
+          type: string
+          example: 'rest_forbidden'
+        message:
+          type: string
+          example: '未授權的操作'
+        data:
+          type: object
+          properties:
+            status:
+              type: integer
+              example: 401
