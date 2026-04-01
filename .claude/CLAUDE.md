@@ -147,6 +147,28 @@ power_funnel/activity_trigger/before_start   # ActivitySchedulerService：活動
 - 依賴外掛：powerhouse（自動下載）
 - `WP_ENVIRONMENT_TYPE=local` 時使用 `vendor/autoload.php`，production 使用 `vendor-prefixed/autoload.php`
 
+## AI 開發工具
+
+### 瀏覽器操作（Playwright）
+
+- 使用 `/playwright-cli` skill 可啟動瀏覽器進行頁面操作、表單填寫、截圖、E2E 測試
+- 連接模式：`--remote-debugging-port=9222`，使用用戶的 Chrome Profile
+- 啟動 Chrome Debug 模式：`~/.claude/scripts/chrome-debug-start.ps1`（port 9222）
+- 網站 URL 與登入帳密存放於 `.env`
+- 若 `https://local-turbo.powerhouse.tw` 連不上，可能是 Cloudflare Tunnel 未啟動，執行 `C:\Users\User\LocalSites\turbo\app\public\start-tunnel.sh` 開啟
+
+### 視覺檢查（Chrome MCP）
+
+- 使用 `/chrome` 命令可查看網站頁面的視覺呈現
+- **僅在需要視覺能力時使用**（如 UI 排版確認、截圖比對）
+
+### 資料庫操作（MySQL MCP）
+
+- `.mcp.json` 已設定 MySQL MCP Server，可直接對資料庫執行 CRUD
+- 連線資訊：`127.0.0.1:10085`，DB=`local`，user=`root`
+- 適用場景：查詢資料狀態、驗證 API 寫入結果、除錯資料問題
+- DB 備份：`C:\Users\User\LocalSites\turbo\app\public\local-20260401-044201.sql`（如需還原）
+
 ## 已知限制
 
 1. ESLint 與 `prettier-plugin-multiline-arrays` 可能有相容性問題
