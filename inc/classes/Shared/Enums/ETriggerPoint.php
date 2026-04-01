@@ -48,6 +48,10 @@ enum ETriggerPoint : string {
 	/** 枚舉存根：推廣連結被點擊（目前無點擊追蹤機制，僅列出供前端顯示） */
 	case PROMO_LINK_CLICKED = self::PREFIX . 'promo_link_clicked';
 
+	// ========== P4: WooCommerce 觸發點 ==========
+
+	case ORDER_COMPLETED = self::PREFIX . 'order_completed';
+
 	/** 標籤 */
 	public function label(): string {
 		$mapper = [
@@ -70,6 +74,8 @@ enum ETriggerPoint : string {
 
 			self::USER_TAGGED->value            => '用戶被貼標籤後',
 			self::PROMO_LINK_CLICKED->value     => '推廣連結被點擊後',
+
+			self::ORDER_COMPLETED->value        => '訂單完成後',
 		];
 		return $mapper[ $this->value ];
 	}

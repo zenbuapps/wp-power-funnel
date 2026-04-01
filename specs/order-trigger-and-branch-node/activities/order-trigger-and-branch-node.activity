@@ -1,0 +1,35 @@
+[ACTIVITY] 訂單完成觸發點與是/否分支節點
+[ACTOR] Admin -> {specs/actors/admin.md}
+[ACTOR] System -> {specs/actors/system.md}
+[PRINCIPLE] Serializable Context Callable -> {../workflow-engine/specs/design-principles.md}
+
+# Part A: 訂單完成觸發點 (ORDER_COMPLETED)
+
+[STEP:1] @System {features/trigger-point/register-order-completed-trigger.feature}
+  ETriggerPoint enum 新增 ORDER_COMPLETED case（hook value: pf/trigger/order_completed）。TriggerPointService 在 WooCommerce 啟用時監聽 woocommerce_order_status_completed hook，WooCommerce 未啟用時靜默忽略。
+
+[STEP:2] @System {features/trigger-point/fire-order-completed.feature}
+  WooCommerce 訂單狀態變更為 completed 時，TriggerPointService 使用 wc_get_order() 取得訂單資料（HPOS 相容），建立 context_callable_set 並觸發 pf/trigger/order_completed hook。
+
+[STEP:3] @System {features/trigger-point/resolve-order-context.feature}
+  resolve_order_context() 延遲求值：以 order_id 為參數，呼叫 wc_get_order() 取得最新訂單資料，回傳 9 個 context keys：order_id、order_total、billing_email、customer_id、line_items_summary、shipping_address、payment_method、order_date、billing_phone。訂單已刪除時回傳安全預設值。
+
+[STEP:4] @System {features/trigger-point/order-param-helper.feature}
+  ParamHelper::replace() 新增 $order 物件替換（與現有 $user、$product 等同層級）。context 中的 order_id 用於呼叫 wc_get_order() 取得 WC_Order 物件，再透過 ReplaceHelper 鍊式呼叫 replace($order) 支援 {{order_*}} 模板替換。WordPress DB 物件快取使查詢成本低，且能取到完整訂單欄位。
+
+# Part B: 是/否分支節點 (YesNoBranchNode)
+
+[STEP:5] @System {features/trigger-point/query-trigger-point-context-keys.feature}
+  新增 REST API 端點，回傳指定觸發點的可用 context keys 列表。各 ETriggerPoint 對應的 context schema 以靜態方法定義在 TriggerPointService 中。前端 YesNoBranchNode 編輯器透過此 API 動態載入 condition_field 的 select 選項。
+
+[STEP:6] @System {features/node-system/yes-no-branch-form-fields.feature}
+  YesNoBranchNode 的 form_fields 定義：condition_field（type=select，選項從觸發點的 context keys API 動態帶入）、operator（比較運算子選擇）、condition_value（比較值輸入）、yes_next_node_id（是分支目標節點 ID）、no_next_node_id（否分支目標節點 ID）。
+
+[STEP:7] @System {features/node-system/yes-no-branch-execute.feature}
+  YesNoBranchNode.execute() 實作：從 workflow.context 取出 condition_field 的值，以 operator 進行比較，判斷結果為 true 時走 yes_next_node_id，為 false 時走 no_next_node_id。回傳 WorkflowResultDTO 帶有 next_node_id。
+
+[STEP:8] @System {features/workflow/workflow-non-linear-execution.feature}
+  改造 WorkflowDTO 核心執行邏輯：get_current_index() 在前一個 result 帶有 next_node_id 時，不再以 results.count 線性遞增，而是跳轉到 next_node_id 對應的節點 index。next_node_id 指向不存在的節點時直接標記 workflow 為 failed，錯誤訊息「找不到目標節點 {next_node_id}」。現有不帶 next_node_id 的線性節點行為完全不變（向下相容）。
+
+[STEP:9] @System {features/workflow/branch-cycle-prevention.feature}
+  防止分支迴圈：節點執行時檢查 results 中是否已有該 node_id 的結果，若有則代表迴圈，標記 workflow 為 failed，錯誤訊息「偵測到節點迴圈：節點 {node_id} 已執行過」。嚴格禁止同一節點重複執行。

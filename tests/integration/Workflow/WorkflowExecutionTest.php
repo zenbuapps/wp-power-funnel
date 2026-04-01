@@ -511,11 +511,11 @@ class WorkflowExecutionTest extends IntegrationTestCase {
 			]
 		);
 
-		// Given wp_mail 回傳 false
+		// Given wp_mail 回傳 false（使用 pre_wp_mail filter 攔截）
 		\add_filter(
-			'wp_mail',
-			static function ($args): bool {
-				return false; // 強制 wp_mail 失敗
+			'pre_wp_mail',
+			static function (): bool {
+				return false; // 強制 wp_mail 回傳 false
 			}
 		);
 
@@ -523,7 +523,7 @@ class WorkflowExecutionTest extends IntegrationTestCase {
 		$workflow_dto = WorkflowDTO::of((string) $workflow_id);
 		$workflow_dto->try_execute();
 
-		\remove_all_filters('wp_mail');
+		\remove_all_filters('pre_wp_mail');
 
 		// Then 節點 n1 的結果 code 應為 500
 		\clean_post_cache($workflow_id);

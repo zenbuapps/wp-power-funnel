@@ -34,4 +34,20 @@ final class TestCallable {
 	public static function return_false( mixed ...$args ): bool {
 		return false;
 	}
+
+	/**
+	 * 測試用 context 暫存區
+	 *
+	 * @var array<string, string>
+	 */
+	public static array $test_context = [];
+
+	/**
+	 * 回傳測試用 context（Serializable Context Callable 目標方法）
+	 *
+	 * @return array<string, string>
+	 */
+	public static function return_test_context(): array {
+		return self::$test_context;
+	}
 }

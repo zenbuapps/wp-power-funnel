@@ -1,0 +1,64 @@
+// 訂單觸發點與是/否分支節點 — Entity Relationship Model
+// 注意：此需求主要擴充既有的工作流引擎資料結構，不新增獨立資料表。
+// 以下列出需要擴充或新增的欄位與 Enum。
+
+// ========== 既有資料表擴充 ==========
+
+// WorkflowResultDTO 擴充 next_node_id 欄位
+// 儲存於 wp_postmeta 的 results 序列化陣列中
+// 原有欄位：node_id (string), code (int), message (string), data (mixed)
+// 新增欄位：next_node_id (string, nullable)
+//
+// Table workflow_results（邏輯結構，實際儲存於 wp_postmeta serialized array）{
+//   node_id       varchar  [not null, note: '執行的節點 ID']
+//   code          integer  [not null, note: '結果碼：200=成功, 301=跳過, 500=失敗']
+//   message       varchar  [note: '結果訊息']
+//   data          text     [note: '處理結果值']
+//   next_node_id  varchar  [note: '分支節點跳轉目標，null 表示線性執行下一個']
+// }
+
+// ========== Enum 定義 ==========
+
+Enum trigger_point {
+  registration_created    [note: '用戶報名後（舊，已棄用）']
+  registration_approved   [note: '用戶報名審核通過後']
+  registration_rejected   [note: '用戶報名被拒絕後']
+  registration_cancelled  [note: '用戶取消報名後']
+  registration_failed     [note: '用戶報名失敗後']
+  line_followed           [note: '用戶關注 LINE 官方帳號後']
+  line_unfollowed         [note: '用戶取消關注 LINE 官方帳號後']
+  line_message_received   [note: '收到 LINE 訊息後']
+  workflow_completed      [note: '工作流完成後']
+  workflow_failed         [note: '工作流失敗後']
+  activity_started        [note: '活動開始時']
+  activity_before_start   [note: '活動開始前']
+  activity_ended          [note: '活動結束後（枚舉存根）']
+  user_tagged             [note: '用戶被貼標籤後']
+  promo_link_clicked      [note: '推廣連結被點擊後（枚舉存根）']
+  order_completed         [note: '訂單完成後（新增）']
+
+  Note: '觸發時機點 enum，對應 ETriggerPoint PHP enum'
+}
+
+Enum yes_no_branch_operator {
+  gt            [note: '大於']
+  gte           [note: '大於等於']
+  lt            [note: '小於']
+  lte           [note: '小於等於']
+  equals        [note: '等於']
+  not_equals    [note: '不等於']
+  contains      [note: '包含']
+  not_contains  [note: '不包含']
+  is_empty      [note: '為空']
+  is_not_empty  [note: '不為空']
+
+  Note: 'YesNoBranchNode 支援的比較運算子'
+}
+
+Enum workflow_result_code {
+  200  [note: '成功']
+  301  [note: '跳過（match_callback 不符）']
+  500  [note: '失敗']
+
+  Note: 'WorkflowResultDTO 結果碼'
+}

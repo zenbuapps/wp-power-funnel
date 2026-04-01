@@ -123,7 +123,7 @@ class QueryTriggerPointsTest extends IntegrationTestCase {
 
 		// 驗證所有 15 個觸發點均出現在回應中
 		$expected_hooks = array_map(fn ( ETriggerPoint $case ) => $case->value, ETriggerPoint::cases());
-		$this->assertCount(15, ETriggerPoint::cases(), 'ETriggerPoint 應有 15 個 case（1 個原有 + 14 個新增）');
+		$this->assertCount(16, ETriggerPoint::cases(), 'ETriggerPoint 應有 16 個 case（含 ORDER_COMPLETED）');
 
 		foreach ($expected_hooks as $expected_hook) {
 			$this->assertContains($expected_hook, $hooks, "應包含觸發點 {$expected_hook}");

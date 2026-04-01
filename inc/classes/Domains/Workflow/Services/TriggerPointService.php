@@ -36,6 +36,14 @@ final class TriggerPointService {
 		// P2：工作流引擎觸發點
 		\add_action('power_funnel/workflow/completed', [ __CLASS__, 'on_workflow_completed' ], 10, 1);
 		\add_action('power_funnel/workflow/failed', [ __CLASS__, 'on_workflow_failed' ], 10, 1);
+
+		// P4：WooCommerce 訂單觸發點（軟依賴）
+		if ( \function_exists( 'wc_get_order' ) ) {
+			\add_action('woocommerce_order_status_completed', [ __CLASS__, 'on_order_completed' ], 10, 1);
+		}
+
+		// Context Keys filter
+		\add_filter('power_funnel/trigger_point/context_keys', [ __CLASS__, 'filter_context_keys' ], 10, 2);
 	}
 
 	// ========== P0：報名狀態觸發點處理 ==========
@@ -344,5 +352,270 @@ final class TriggerPointService {
 			'user_id'  => $user_id,
 			'tag_name' => $tag_name,
 		];
+	}
+
+	// ========== P4：WooCommerce 訂單觸發點處理 ==========
+
+	/**
+	 * WooCommerce 訂單完成時觸發
+	 *
+	 * @param int $order_id WooCommerce 訂單 ID
+	 * @return void
+	 */
+	public static function on_order_completed( int $order_id ): void {
+		$context_callable_set = self::build_order_context_callable_set($order_id);
+		if ($context_callable_set === null) {
+			return;
+		}
+		\do_action(ETriggerPoint::ORDER_COMPLETED->value, $context_callable_set);
+	}
+
+	/**
+	 * 建立訂單 context_callable_set
+	 *
+	 * @param int $order_id WooCommerce 訂單 ID
+	 * @return array<string, mixed>|null 若訂單不存在則回傳 null
+	 */
+	private static function build_order_context_callable_set( int $order_id ): ?array {
+		if (!\function_exists('wc_get_order')) {
+			Plugin::logger('TriggerPointService：WooCommerce 未啟用，跳過訂單觸發', 'warning');
+			return null;
+		}
+
+		$order = \wc_get_order($order_id);
+		if (!$order) {
+			Plugin::logger("TriggerPointService：找不到訂單 #{$order_id}", 'warning');
+			return null;
+		}
+
+		return [
+			'callable' => [ self::class, 'resolve_order_context' ],
+			'params'   => [ $order_id ],
+		];
+	}
+
+	/**
+	 * 解析訂單 context（Serializable Context Callable 目標方法）
+	 *
+	 * 延遲求值：每次呼叫時從 DB 讀取最新訂單資料，
+	 * 確保 WaitNode 延遲後仍能取得最新值。
+	 *
+	 * @param int $order_id WooCommerce 訂單 ID
+	 * @return array<string, string> context 陣列（9 個 keys），訂單不存在時回傳空陣列
+	 */
+	public static function resolve_order_context( int $order_id ): array {
+		if ($order_id <= 0 || !\function_exists('wc_get_order')) {
+			return [];
+		}
+
+		$order = \wc_get_order($order_id);
+		if (!$order) {
+			return [];
+		}
+
+		// 組裝商品清單摘要
+		$line_items = [];
+		foreach ($order->get_items() as $item) {
+			$line_items[] = $item->get_name() . ' x' . $item->get_quantity();
+		}
+		$line_items_summary = \implode(', ', $line_items);
+
+		// 配送地址，若為空則使用帳單地址
+		$shipping_address = $order->get_formatted_shipping_address();
+		if (empty($shipping_address)) {
+			$shipping_address = $order->get_formatted_billing_address();
+		}
+
+		return [
+			'order_id'           => (string) $order->get_id(),
+			'order_total'        => (string) $order->get_total(),
+			'billing_email'      => $order->get_billing_email(),
+			'customer_id'        => (string) $order->get_customer_id(),
+			'line_items_summary' => $line_items_summary,
+			'shipping_address'   => (string) $shipping_address,
+			'payment_method'     => $order->get_payment_method(),
+			'order_date'         => $order->get_date_created()?->format('Y-m-d') ?? '',
+			'billing_phone'      => $order->get_billing_phone(),
+		];
+	}
+
+	// ========== Context Keys 查詢 ==========
+
+	/**
+	 * Context Keys 靜態映射表
+	 *
+	 * @var array<string, array<int, array{key: string, label: string}>>|null
+	 */
+	private static ?array $context_keys_map = null;
+
+	/**
+	 * 取得 Context Keys 映射表
+	 *
+	 * @return array<string, array<int, array{key: string, label: string}>>
+	 */
+	private static function get_context_keys_map(): array {
+		if (self::$context_keys_map !== null) {
+			return self::$context_keys_map;
+		}
+
+		$order_keys = [
+			[
+				'key'   => 'order_id',
+				'label' => '訂單 ID',
+			],
+			[
+				'key'   => 'order_total',
+				'label' => '訂單金額',
+			],
+			[
+				'key'   => 'billing_email',
+				'label' => '帳單 Email',
+			],
+			[
+				'key'   => 'customer_id',
+				'label' => '客戶 ID',
+			],
+			[
+				'key'   => 'line_items_summary',
+				'label' => '商品清單摘要',
+			],
+			[
+				'key'   => 'shipping_address',
+				'label' => '配送地址',
+			],
+			[
+				'key'   => 'payment_method',
+				'label' => '付款方式',
+			],
+			[
+				'key'   => 'order_date',
+				'label' => '訂單日期',
+			],
+			[
+				'key'   => 'billing_phone',
+				'label' => '帳單電話',
+			],
+		];
+
+		$registration_keys = [
+			[
+				'key'   => 'registration_id',
+				'label' => '報名 ID',
+			],
+			[
+				'key'   => 'identity_id',
+				'label' => '身分 ID',
+			],
+			[
+				'key'   => 'identity_provider',
+				'label' => '身分提供者',
+			],
+			[
+				'key'   => 'activity_id',
+				'label' => '活動 ID',
+			],
+			[
+				'key'   => 'promo_link_id',
+				'label' => '推廣連結 ID',
+			],
+		];
+
+		$line_keys = [
+			[
+				'key'   => 'line_user_id',
+				'label' => 'LINE 用戶 ID',
+			],
+			[
+				'key'   => 'event_type',
+				'label' => '事件類型',
+			],
+		];
+
+		$line_message_keys = [
+			[
+				'key'   => 'line_user_id',
+				'label' => 'LINE 用戶 ID',
+			],
+			[
+				'key'   => 'event_type',
+				'label' => '事件類型',
+			],
+			[
+				'key'   => 'message_text',
+				'label' => '訊息文字',
+			],
+		];
+
+		$workflow_keys = [
+			[
+				'key'   => 'workflow_id',
+				'label' => '工作流 ID',
+			],
+			[
+				'key'   => 'workflow_rule_id',
+				'label' => '工作流規則 ID',
+			],
+			[
+				'key'   => 'trigger_point',
+				'label' => '觸發點',
+			],
+		];
+
+		$user_tagged_keys = [
+			[
+				'key'   => 'user_id',
+				'label' => '用戶 ID',
+			],
+			[
+				'key'   => 'tag_name',
+				'label' => '標籤名稱',
+			],
+		];
+
+		self::$context_keys_map = [
+			ETriggerPoint::ORDER_COMPLETED->value        => $order_keys,
+
+			ETriggerPoint::REGISTRATION_APPROVED->value  => $registration_keys,
+			ETriggerPoint::REGISTRATION_REJECTED->value  => $registration_keys,
+			ETriggerPoint::REGISTRATION_CANCELLED->value => $registration_keys,
+			ETriggerPoint::REGISTRATION_FAILED->value    => $registration_keys,
+			ETriggerPoint::REGISTRATION_CREATED->value   => $registration_keys,
+
+			ETriggerPoint::LINE_FOLLOWED->value          => $line_keys,
+			ETriggerPoint::LINE_UNFOLLOWED->value        => $line_keys,
+			ETriggerPoint::LINE_MESSAGE_RECEIVED->value  => $line_message_keys,
+
+			ETriggerPoint::WORKFLOW_COMPLETED->value     => $workflow_keys,
+			ETriggerPoint::WORKFLOW_FAILED->value        => $workflow_keys,
+
+			ETriggerPoint::USER_TAGGED->value            => $user_tagged_keys,
+		];
+
+		return self::$context_keys_map;
+	}
+
+	/**
+	 * 取得指定觸發點的可用 Context Keys
+	 *
+	 * @param string $trigger_point_hook 觸發點 hook 名稱
+	 * @return array<int, array{key: string, label: string}> context keys 清單
+	 */
+	public static function get_context_keys_for_trigger_point( string $trigger_point_hook ): array {
+		$map = self::get_context_keys_map();
+		return $map[ $trigger_point_hook ] ?? [];
+	}
+
+	/**
+	 * Filter: power_funnel/trigger_point/context_keys
+	 *
+	 * @param array<int, array{key: string, label: string}> $keys           現有的 keys
+	 * @param string                                        $trigger_point  觸發點 hook 名稱
+	 * @return array<int, array{key: string, label: string}> context keys
+	 */
+	public static function filter_context_keys( array $keys, string $trigger_point ): array {
+		if (empty($trigger_point)) {
+			return [];
+		}
+		return self::get_context_keys_for_trigger_point($trigger_point);
 	}
 }

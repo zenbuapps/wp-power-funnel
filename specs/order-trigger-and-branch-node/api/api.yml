@@ -1,0 +1,58 @@
+openapi: 3.0.0
+info:
+  title: Power Funnel - 訂單觸發點與分支節點
+  version: 1.0.0
+  description: 訂單完成觸發點 (ORDER_COMPLETED) 與是/否分支節點 (YesNoBranchNode) 相關 API
+
+paths:
+  /trigger-points/{triggerPoint}/context-keys:
+    get:
+      operationId: getTriggerPointContextKeys
+      summary: 查詢觸發點可用 Context Keys
+      description: 回傳指定觸發點的可用 context keys 列表，供 YesNoBranchNode 編輯器的 condition_field 下拉選單使用
+      parameters:
+        - name: triggerPoint
+          in: path
+          required: true
+          schema:
+            type: string
+            example: pf/trigger/order_completed
+          description: 觸發點 hook value
+      responses:
+        '200':
+          description: 成功回傳 context keys 列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ContextKeyItem'
+        '400':
+          description: 必要參數未提供
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    ContextKeyItem:
+      type: object
+      required: [key, label]
+      properties:
+        key:
+          type: string
+          example: order_id
+          description: context key 名稱，對應 workflow context 中的 key
+        label:
+          type: string
+          example: 訂單 ID
+          description: 前端顯示用的中文標籤
+
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: 必要參數未提供

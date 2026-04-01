@@ -62,9 +62,10 @@ final class NodeDTO extends DTO {
 				$index,
 				new WorkflowResultDTO(
 				[
-					'node_id' => $this->id,
-					'code'    => 301,
-					'message' => "workflow #{$workflow_dto->id} node #{$this->id} 不符合執行條件，跳過",
+					'node_id'     => $this->id,
+					'code'        => 301,
+					'message'     => "workflow #{$workflow_dto->id} node #{$this->id} 不符合執行條件，跳過",
+					'executed_at' => $this->get_current_timestamp(),
 				]
 				)
 					);
@@ -83,16 +84,29 @@ final class NodeDTO extends DTO {
 			if (!$result->is_success()) {
 				throw new \RuntimeException($result->message);
 			}
-			$workflow_dto->add_result( $index, $result);
+			// 記錄節點執行時間戳（Success path）
+			// 以建構子方式傳入，確保 DTO immutability 不被破壞，同時保留所有原始欄位
+			$result_with_ts = new WorkflowResultDTO(
+				[
+					'node_id'      => $result->node_id,
+					'code'         => $result->code,
+					'message'      => $result->message,
+					'data'         => $result->data,
+					'next_node_id' => $result->next_node_id,
+					'executed_at'  => $this->get_current_timestamp(),
+				]
+			);
+			$workflow_dto->add_result( $index, $result_with_ts );
 		} catch (\Throwable $e) {
 			// 如果這個節點執行失敗，就拋出，中斷 workflow，並標註為失敗
 			$workflow_dto->add_result(
 				$index,
 				new WorkflowResultDTO(
 					[
-						'node_id' => $this->id,
-						'code'    => 500,
-						'message' => $e->getMessage(),
+						'node_id'     => $this->id,
+						'code'        => 500,
+						'message'     => $e->getMessage(),
+						'executed_at' => $this->get_current_timestamp(),
 					]
 				)
 			);
@@ -111,5 +125,14 @@ final class NodeDTO extends DTO {
 	/** 取得參數 */
 	public function try_get_param( string $key ): mixed {
 		return $this->params[ $key ] ?? null;
+	}
+
+	/**
+	 * 取得當前 ISO 8601 時間戳字串，優先使用 wp_date()，fallback 為 gmdate()
+	 *
+	 * @return string ISO 8601 格式的時間字串，例如 2026-04-01T10:00:00+08:00
+	 */
+	private function get_current_timestamp(): string {
+		return \wp_date( 'c' ) ?: \gmdate( 'c' );
 	}
 }

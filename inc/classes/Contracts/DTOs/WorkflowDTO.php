@@ -80,6 +80,9 @@ final class WorkflowDTO extends DTO {
 	 * 檢查當前 workflow 要執行哪個 node
 	 * 如果無須執行就設定狀態、返回
 	 *
+	 * 支援非線性執行：若上一個 result 帶有 next_node_id，
+	 * 則跳轉到對應節點而非按線性順序執行。
+	 *
 	 * @return void
 	 */
 	public function try_execute(): void {
@@ -89,7 +92,10 @@ final class WorkflowDTO extends DTO {
 
 		$current_index = $this->get_current_index();
 		if ($current_index === null) {
-			$this->set_status( EWorkflowStatus::COMPLETED);
+			// get_current_index 可能已將狀態設為 FAILED（迴圈偵測 / 目標節點不存在）
+			if ($this->status === EWorkflowStatus::RUNNING) {
+				$this->set_status( EWorkflowStatus::COMPLETED);
+			}
 			return;
 		}
 		try {
@@ -115,11 +121,94 @@ final class WorkflowDTO extends DTO {
 		throw new \Exception("找不到節點 {$node_id}");
 	}
 
-	/** 現在要執行第幾個，null 代表所有節點都執行完畢 */
+	/**
+	 * 決定下一個要執行的節點 index
+	 *
+	 * 支援非線性跳轉：
+	 * 1. results 為空 → 執行第 0 個節點
+	 * 2. 上一個 result 帶有 next_node_id → 跳轉到對應節點
+	 *    - 迴圈偵測：若 next_node_id 已在 results 中出現過 → FAILED
+	 *    - 目標不存在：找不到 next_node_id 對應的節點 → FAILED
+	 * 3. 上一個 result 不帶 next_node_id：
+	 *    - 若之前有分支（任一 result 帶 next_node_id）→ 分支結束，return null（completed）
+	 *    - 否則按線性順序（向下相容）
+	 *
+	 * @return int|null 下一個要執行的節點 index，null 表示已完成或已失敗
+	 */
 	private function get_current_index(): int|null {
-		$nodes_count   = (int) \count($this->nodes);
-		$results_count = (int) \count($this->results);
-		if ($nodes_count === $results_count) {
+		$results_count = \count($this->results);
+
+		// 尚無結果，從第 0 個開始
+		if ($results_count === 0) {
+			return \count($this->nodes) > 0 ? 0 : null;
+		}
+
+		/** @var WorkflowResultDTO $last_result */
+		$last_result = \end($this->results);
+
+		// 非線性跳轉：last result 帶有 next_node_id
+		if ($last_result->next_node_id !== '') {
+			$target_node_id = $last_result->next_node_id;
+
+			// 迴圈偵測：檢查 target_node_id 是否已在 results 中出現過
+			foreach ($this->results as $result) {
+				if ($result->node_id === $target_node_id) {
+					\J7\PowerFunnel\Plugin::logger(
+						"WorkflowDTO #{$this->id}：偵測到節點迴圈：節點 {$target_node_id} 已執行過",
+						'warning'
+					);
+					$this->add_result(
+						$results_count,
+						new WorkflowResultDTO(
+							[
+								'node_id' => $target_node_id,
+								'code'    => 500,
+								'message' => "偵測到節點迴圈：節點 {$target_node_id} 已執行過",
+							]
+						)
+					);
+					$this->set_status(EWorkflowStatus::FAILED);
+					return null;
+				}
+			}
+
+			// 目標節點查找
+			try {
+				return $this->get_index($target_node_id);
+			} catch (\Throwable $e) {
+				$this->add_result(
+					$results_count,
+					new WorkflowResultDTO(
+						[
+							'node_id' => $target_node_id,
+							'code'    => 500,
+							'message' => "找不到目標節點 {$target_node_id}",
+						]
+					)
+				);
+				$this->set_status(EWorkflowStatus::FAILED);
+				return null;
+			}
+		}
+
+		// 線性模式：last result 不帶 next_node_id
+		// 檢查之前是否有分支（任一 result 帶 next_node_id）
+		$has_branching = false;
+		foreach ($this->results as $result) {
+			if ($result->next_node_id !== '') {
+				$has_branching = true;
+				break;
+			}
+		}
+
+		if ($has_branching) {
+			// 分支模式中遇到不帶 next_node_id 的結果 → 分支路徑結束
+			return null;
+		}
+
+		// 純線性模式（向下相容）
+		$nodes_count = \count($this->nodes);
+		if ($results_count >= $nodes_count) {
 			return null;
 		}
 		return $results_count;

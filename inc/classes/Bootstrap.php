@@ -28,9 +28,11 @@ final class Bootstrap {
 		Applications\SendLine::register_hooks();
 		Applications\RegisterActivityViaLine::register_hooks();
 		Applications\ActivityApi::register_hooks();
+		Applications\WorkflowApi::register_hooks();
 		Applications\OptionApi::register_hooks();
 		Applications\TriggerPointApi::register_hooks();
 		Applications\NodeDefinitionApi::register_hooks();
+		Applications\ContextKeysApi::register_hooks();
 		Domains\Workflow\Services\TriggerPointService::register_hooks();
 		Domains\Workflow\Services\ActivitySchedulerService::register_hooks();
 
