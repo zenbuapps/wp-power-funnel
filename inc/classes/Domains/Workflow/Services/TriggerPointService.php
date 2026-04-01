@@ -131,20 +131,28 @@ final class TriggerPointService {
 		}
 
 		return [
-			'callable' => static function ( int $id ): array {
-				$registration_post = \get_post($id);
-				if (!$registration_post) {
-					return [];
-				}
-				return [
-					'registration_id'   => (string) $id,
-					'identity_id'       => (string) \get_post_meta($id, 'identity_id', true),
-					'identity_provider' => (string) \get_post_meta($id, 'identity_provider', true),
-					'activity_id'       => (string) \get_post_meta($id, 'activity_id', true),
-					'promo_link_id'     => (string) \get_post_meta($id, 'promo_link_id', true),
-				];
-			},
+			'callable' => [ self::class, 'resolve_registration_context' ],
 			'params'   => [ $post_id ],
+		];
+	}
+
+	/**
+	 * 解析報名 context（Serializable Context Callable 目標方法）
+	 *
+	 * @param int $post_id 報名文章 ID
+	 * @return array<string, string> context 陣列
+	 */
+	public static function resolve_registration_context( int $post_id ): array {
+		$post = \get_post($post_id);
+		if (!$post) {
+			return [];
+		}
+		return [
+			'registration_id'   => (string) $post_id,
+			'identity_id'       => (string) \get_post_meta($post_id, 'identity_id', true),
+			'identity_provider' => (string) \get_post_meta($post_id, 'identity_provider', true),
+			'activity_id'       => (string) \get_post_meta($post_id, 'activity_id', true),
+			'promo_link_id'     => (string) \get_post_meta($post_id, 'promo_link_id', true),
 		];
 	}
 
@@ -218,30 +226,29 @@ final class TriggerPointService {
 			}
 		}
 
-		$context_data = [
+		return [
+			'callable' => [ self::class, 'resolve_line_context' ],
+			'params'   => [ $line_user_id, $event_type, $message_text ],
+		];
+	}
+
+	/**
+	 * 解析 LINE 事件 context（Serializable Context Callable 目標方法）
+	 *
+	 * @param string $line_user_id LINE 用戶 ID
+	 * @param string $event_type   事件類型
+	 * @param string $message_text 訊息文字（非訊息事件時為空字串）
+	 * @return array<string, string> context 陣列
+	 */
+	public static function resolve_line_context( string $line_user_id, string $event_type, string $message_text = '' ): array {
+		$data = [
 			'line_user_id' => $line_user_id,
 			'event_type'   => $event_type,
 		];
-
-		if ($include_message) {
-			$context_data['message_text'] = $message_text;
+		if ($message_text !== '') {
+			$data['message_text'] = $message_text;
 		}
-
-		return [
-			'callable' => static function ( string $user_id, string $type, string $message = '' ) use ( $include_message ): array {
-				$data = [
-					'line_user_id' => $user_id,
-					'event_type'   => $type,
-				];
-				if ($include_message) {
-					$data['message_text'] = $message;
-				}
-				return $data;
-			},
-			'params'   => $include_message
-				? [ $line_user_id, $event_type, $message_text ]
-				: [ $line_user_id, $event_type ],
-		];
+		return $data;
 	}
 
 	// ========== P2：工作流引擎觸發點處理 ==========
@@ -288,14 +295,22 @@ final class TriggerPointService {
 		}
 
 		return [
-			'callable' => static function ( string $id ): array {
-				return [
-					'workflow_id'      => $id,
-					'workflow_rule_id' => (string) \get_post_meta( (int) $id, 'workflow_rule_id', true),
-					'trigger_point'    => (string) \get_post_meta( (int) $id, 'trigger_point', true),
-				];
-			},
+			'callable' => [ self::class, 'resolve_workflow_context' ],
 			'params'   => [ $workflow_id ],
+		];
+	}
+
+	/**
+	 * 解析工作流 context（Serializable Context Callable 目標方法）
+	 *
+	 * @param string $workflow_id 工作流 ID
+	 * @return array<string, string> context 陣列
+	 */
+	public static function resolve_workflow_context( string $workflow_id ): array {
+		return [
+			'workflow_id'      => $workflow_id,
+			'workflow_rule_id' => (string) \get_post_meta( (int) $workflow_id, 'workflow_rule_id', true),
+			'trigger_point'    => (string) \get_post_meta( (int) $workflow_id, 'trigger_point', true),
 		];
 	}
 
@@ -311,14 +326,23 @@ final class TriggerPointService {
 	 */
 	public static function fire_user_tagged( string $user_id, string $tag_name ): void {
 		$context_callable_set = [
-			'callable' => static function ( string $uid, string $tag ): array {
-				return [
-					'user_id'  => $uid,
-					'tag_name' => $tag,
-				];
-			},
+			'callable' => [ self::class, 'resolve_user_tagged_context' ],
 			'params'   => [ $user_id, $tag_name ],
 		];
 		\do_action(ETriggerPoint::USER_TAGGED->value, $context_callable_set);
+	}
+
+	/**
+	 * 解析用戶標籤 context（Serializable Context Callable 目標方法）
+	 *
+	 * @param string $user_id  LINE 用戶 ID
+	 * @param string $tag_name 標籤名稱
+	 * @return array<string, string> context 陣列
+	 */
+	public static function resolve_user_tagged_context( string $user_id, string $tag_name ): array {
+		return [
+			'user_id'  => $user_id,
+			'tag_name' => $tag_name,
+		];
 	}
 }

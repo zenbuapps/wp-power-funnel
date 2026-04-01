@@ -132,15 +132,23 @@ final class ActivitySchedulerService {
 	 */
 	public static function on_activity_started( string $activity_id ): void {
 		$context_callable_set = [
-			'callable' => static function ( string $id ): array {
-				return [
-					'activity_id' => $id,
-					'event_type'  => 'activity_started',
-				];
-			},
+			'callable' => [ self::class, 'resolve_activity_started_context' ],
 			'params'   => [ $activity_id ],
 		];
 		\do_action(ETriggerPoint::ACTIVITY_STARTED->value, $context_callable_set);
+	}
+
+	/**
+	 * 解析活動開始 context（Serializable Context Callable 目標方法）
+	 *
+	 * @param string $activity_id 活動 ID
+	 * @return array<string, string> context 陣列
+	 */
+	public static function resolve_activity_started_context( string $activity_id ): array {
+		return [
+			'activity_id' => $activity_id,
+			'event_type'  => 'activity_started',
+		];
 	}
 
 	/**
@@ -152,15 +160,24 @@ final class ActivitySchedulerService {
 	 */
 	public static function on_activity_before_start( string $activity_id, string $workflow_rule_id ): void {
 		$context_callable_set = [
-			'callable' => static function ( string $id, string $rule_id ): array {
-				return [
-					'activity_id'      => $id,
-					'workflow_rule_id' => $rule_id,
-					'event_type'       => 'activity_before_start',
-				];
-			},
+			'callable' => [ self::class, 'resolve_activity_before_start_context' ],
 			'params'   => [ $activity_id, $workflow_rule_id ],
 		];
 		\do_action(ETriggerPoint::ACTIVITY_BEFORE_START->value, $context_callable_set);
+	}
+
+	/**
+	 * 解析活動開始前 context（Serializable Context Callable 目標方法）
+	 *
+	 * @param string $activity_id      活動 ID
+	 * @param string $workflow_rule_id WorkflowRule ID
+	 * @return array<string, string> context 陣列
+	 */
+	public static function resolve_activity_before_start_context( string $activity_id, string $workflow_rule_id ): array {
+		return [
+			'activity_id'      => $activity_id,
+			'workflow_rule_id' => $workflow_rule_id,
+			'event_type'       => 'activity_before_start',
+		];
 	}
 }
