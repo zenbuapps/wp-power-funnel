@@ -69,7 +69,15 @@ const useColumns = () => {
 			dataIndex: 'nodes',
 			width: 100,
 			render: (nodes: TWorkflowRuleRecord['nodes']) => {
-				const count = Array.isArray(nodes) ? nodes.length : 0
+				let parsed = nodes
+				if (typeof nodes === 'string') {
+					try {
+						parsed = JSON.parse(nodes)
+					} catch {
+						parsed = []
+					}
+				}
+				const count = Array.isArray(parsed) ? parsed.length : 0
 				return <span>{count} 個節點</span>
 			},
 		},
