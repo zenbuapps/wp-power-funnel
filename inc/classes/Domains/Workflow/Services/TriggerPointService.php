@@ -32,6 +32,7 @@ final class TriggerPointService {
 		\add_action('power_funnel/line/webhook/follow', [ __CLASS__, 'on_line_followed' ], 10, 1);
 		\add_action('power_funnel/line/webhook/unfollow', [ __CLASS__, 'on_line_unfollowed' ], 10, 1);
 		\add_action('power_funnel/line/webhook/message', [ __CLASS__, 'on_line_message_received' ], 10, 1);
+		\add_action('power_funnel/line/webhook/postback', [ __CLASS__, 'on_line_postback_received' ], 10, 1);
 
 		// P2：工作流引擎觸發點
 		\add_action('power_funnel/workflow/completed', [ __CLASS__, 'on_workflow_completed' ], 10, 1);
@@ -206,6 +207,79 @@ final class TriggerPointService {
 			return;
 		}
 		\do_action(ETriggerPoint::LINE_MESSAGE_RECEIVED->value, $context_callable_set);
+	}
+
+	/**
+	 * 收到 LINE Postback 時觸發
+	 *
+	 * @param \LINE\Webhook\Model\Event $event LINE 事件
+	 * @return void
+	 */
+	public static function on_line_postback_received( \LINE\Webhook\Model\Event $event ): void {
+		if (!($event instanceof \LINE\Webhook\Model\PostbackEvent)) {
+			return;
+		}
+		$context_callable_set = self::build_line_postback_context_callable_set($event);
+		if ($context_callable_set === null) {
+			return;
+		}
+		\do_action(ETriggerPoint::LINE_POSTBACK_RECEIVED->value, $context_callable_set);
+	}
+
+	/**
+	 * 建立 LINE Postback 事件 context_callable_set
+	 *
+	 * @param \LINE\Webhook\Model\PostbackEvent $event LINE Postback 事件
+	 * @return array<string, mixed>|null 若事件無 userId 則回傳 null
+	 */
+	private static function build_line_postback_context_callable_set( \LINE\Webhook\Model\PostbackEvent $event ): ?array {
+		$helper       = new \J7\PowerFunnel\Infrastructure\Line\Shared\Helpers\EventWebhookHelper($event);
+		$line_user_id = $helper->get_identity_id();
+
+		if (empty($line_user_id)) {
+			Plugin::logger('TriggerPointService：LINE Postback 事件缺少 userId，跳過觸發', 'info');
+			return null;
+		}
+
+		$postback      = $event->getPostback();
+		$postback_data = $postback ? ($postback->getData() ?? '') : '';
+
+		// 嘗試解析 JSON 取出 action key，非 JSON 時 postback_action 為空字串
+		$postback_action = '';
+		if ($postback_data !== '') {
+			try {
+				/** @var array<string, mixed>|false $decoded */
+				$decoded = \json_decode($postback_data, true, 512, \JSON_THROW_ON_ERROR);
+				if (\is_array($decoded) && isset($decoded['action']) && \is_string($decoded['action'])) {
+					$postback_action = $decoded['action'];
+				}
+			} catch (\JsonException $e) {
+				// 非 JSON 格式，postback_action 維持空字串
+			}
+		}
+
+		return [
+			'callable' => [self::class, 'resolve_line_postback_context'],
+			'params'   => [$line_user_id, 'postback', $postback_data, $postback_action],
+		];
+	}
+
+	/**
+	 * 解析 LINE Postback context（Serializable Context Callable 目標方法）
+	 *
+	 * @param string $line_user_id    LINE 用戶 ID
+	 * @param string $event_type      事件類型（固定為 postback）
+	 * @param string $postback_data   Postback 原始資料字串
+	 * @param string $postback_action Postback action 值（從 JSON 解析，非 JSON 時為空字串）
+	 * @return array<string, string> context 陣列
+	 */
+	public static function resolve_line_postback_context( string $line_user_id, string $event_type, string $postback_data, string $postback_action ): array {
+		return [
+			'line_user_id'    => $line_user_id,
+			'event_type'      => $event_type,
+			'postback_data'   => $postback_data,
+			'postback_action' => $postback_action,
+		];
 	}
 
 	/**
@@ -531,6 +605,25 @@ final class TriggerPointService {
 			],
 		];
 
+		$line_postback_keys = [
+			[
+				'key'   => 'line_user_id',
+				'label' => 'LINE 用戶 ID',
+			],
+			[
+				'key'   => 'event_type',
+				'label' => '事件類型',
+			],
+			[
+				'key'   => 'postback_data',
+				'label' => 'Postback 原始資料',
+			],
+			[
+				'key'   => 'postback_action',
+				'label' => 'Postback Action',
+			],
+		];
+
 		$line_message_keys = [
 			[
 				'key'   => 'line_user_id',
@@ -584,6 +677,7 @@ final class TriggerPointService {
 			ETriggerPoint::LINE_FOLLOWED->value          => $line_keys,
 			ETriggerPoint::LINE_UNFOLLOWED->value        => $line_keys,
 			ETriggerPoint::LINE_MESSAGE_RECEIVED->value  => $line_message_keys,
+			ETriggerPoint::LINE_POSTBACK_RECEIVED->value => $line_postback_keys,
 
 			ETriggerPoint::WORKFLOW_COMPLETED->value     => $workflow_keys,
 			ETriggerPoint::WORKFLOW_FAILED->value        => $workflow_keys,

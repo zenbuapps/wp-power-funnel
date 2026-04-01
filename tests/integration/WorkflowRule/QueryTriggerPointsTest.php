@@ -95,7 +95,7 @@ class QueryTriggerPointsTest extends IntegrationTestCase {
 
 	/**
 	 * Feature: 查詢觸發條件列表
-	 * Example: 僅有預設觸發點時回傳預設列表（包含所有 16 個觸發點）
+	 * Example: 僅有預設觸發點時回傳預設列表（包含所有 21 個觸發點，含 LINE 擴展 5 個）
 	 *
 	 * @group happy
 	 */
@@ -121,9 +121,9 @@ class QueryTriggerPointsTest extends IntegrationTestCase {
 
 		$hooks = \array_column($data['data'], 'hook');
 
-		// 驗證所有 15 個觸發點均出現在回應中
+		// 驗證所有觸發點均出現在回應中
 		$expected_hooks = array_map(fn ( ETriggerPoint $case ) => $case->value, ETriggerPoint::cases());
-		$this->assertCount(16, ETriggerPoint::cases(), 'ETriggerPoint 應有 16 個 case（含 ORDER_COMPLETED）');
+		$this->assertCount(21, ETriggerPoint::cases(), 'ETriggerPoint 應有 21 個 case（含 LINE 擴展 5 個）');
 
 		foreach ($expected_hooks as $expected_hook) {
 			$this->assertContains($expected_hook, $hooks, "應包含觸發點 {$expected_hook}");

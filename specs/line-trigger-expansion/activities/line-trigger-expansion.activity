@@ -1,0 +1,33 @@
+[ACTIVITY] LINE 觸發點擴展
+[ACTOR] System -> {specs/actors/system.md}
+[ACTOR] Admin -> {specs/actors/admin.md}
+
+# P0：LINE Postback 事件觸發點（完整實作）
+
+[STEP:1] @System {features/trigger-point/fire-line-postback-received.feature}
+# 收到 LINE postback webhook 時，系統觸發 LINE_POSTBACK_RECEIVED
+# 支援 trigger_point meta params 中的 postback_action 過濾（任意字串匹配）
+# postback_action 為空或未填時不過濾，所有 Postback 事件都觸發
+# context 包含 line_user_id、event_type、postback_data（原始字串）、postback_action（解析後 action 值）
+# Postback 事件會與既有報名流程（PostbackService）雙重觸發，這是正確行為
+
+[STEP:2] @System {features/trigger-point/register-line-postback-trigger-point.feature}
+# ETriggerPoint enum 新增 LINE_POSTBACK_RECEIVED case + label
+# TriggerPointService 新增 add_action 監聽 power_funnel/line/webhook/postback
+# context_keys_map 新增 LINE_POSTBACK_RECEIVED 的 context keys
+
+# P1：群組事件觸發點（僅 enum 存根 + label，不實作觸發邏輯）
+
+[STEP:3] @System {features/trigger-point/register-line-group-stub-trigger-points.feature}
+# ETriggerPoint enum 新增 4 個 enum cases + labels：
+#   LINE_JOIN (pf/trigger/line_join) — Bot 被加入群組/聊天室
+#   LINE_LEAVE (pf/trigger/line_leave) — Bot 被移出群組/聊天室
+#   LINE_MEMBER_JOINED (pf/trigger/line_member_joined) — 新成員加入 Bot 所在群組
+#   LINE_MEMBER_LEFT (pf/trigger/line_member_left) — 成員離開 Bot 所在群組
+# 不在 TriggerPointService 新增任何 add_action 監聽
+# 前端觸發點列表中可見但標示為「尚未啟用」
+
+# 所有觸發點在前端的呈現
+
+[STEP:4] @Admin {features/trigger-point/query-line-expanded-trigger-points.feature}
+# 管理員查詢觸發條件列表時，應看到所有新增的 LINE 觸發點（含 enum 存根）

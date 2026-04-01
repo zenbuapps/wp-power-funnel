@@ -130,9 +130,38 @@ final class WorkflowRuleDTO extends DTO {
 					return;
 				}
 
+				// trigger_params 匹配檢查：若設定 postback_action 過濾，則提前比對
+				$workflow_rule_dto = WorkflowRuleDTO::of($this->id);
+				$trigger_params    = $workflow_rule_dto->get_trigger_params();
+
+				if (!empty($trigger_params['postback_action']) && \is_string($trigger_params['postback_action'])) {
+					// 提前 resolve context 以取得 postback_action 比對
+					if (!empty($context_callable_set['callable']) && !empty($context_callable_set['params'])) {
+						try {
+							/** @var array<string, string> $context */
+							$context = \call_user_func_array($context_callable_set['callable'], $context_callable_set['params']);
+							if (
+								!\is_array($context) ||
+								!isset($context['postback_action']) ||
+								$context['postback_action'] !== $trigger_params['postback_action']
+							) {
+								RecursionGuard::leave();
+								return;
+							}
+						} catch (\Throwable $e) {
+							\J7\PowerFunnel\Plugin::logger(
+								"WorkflowRuleDTO::register trigger_params 匹配錯誤: {$e->getMessage()}",
+								'warning',
+								[ 'exception' => $e ]
+							);
+							RecursionGuard::leave();
+							return;
+						}
+					}
+				}
+
 				try {
-					$workflow_rule_dto = WorkflowRuleDTO::of($this->id);
-					Repository::create_from( $workflow_rule_dto, $context_callable_set);
+					Repository::create_from($workflow_rule_dto, $context_callable_set);
 				} finally {
 					RecursionGuard::leave();
 				}

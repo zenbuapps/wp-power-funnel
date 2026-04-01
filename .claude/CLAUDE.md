@@ -125,6 +125,11 @@ $context_callable_set = [
 | P1 LINE 互動 | `LINE_FOLLOWED` | `pf/trigger/line_followed` | 用戶關注 LINE 官方帳號 |
 | P1 LINE 互動 | `LINE_UNFOLLOWED` | `pf/trigger/line_unfollowed` | 用戶取消關注 |
 | P1 LINE 互動 | `LINE_MESSAGE_RECEIVED` | `pf/trigger/line_message_received` | 收到 LINE 訊息 |
+| P1 LINE 互動 | `LINE_POSTBACK_RECEIVED` | `pf/trigger/line_postback_received` | 收到 LINE Postback；支援 trigger_params.postback_action 過濾 |
+| P1 LINE 群組 | `LINE_JOIN` | `pf/trigger/line_join` | 枚舉存根：Bot 被加入群組 |
+| P1 LINE 群組 | `LINE_LEAVE` | `pf/trigger/line_leave` | 枚舉存根：Bot 被移出群組 |
+| P1 LINE 群組 | `LINE_MEMBER_JOINED` | `pf/trigger/line_member_joined` | 枚舉存根：新成員加入群組 |
+| P1 LINE 群組 | `LINE_MEMBER_LEFT` | `pf/trigger/line_member_left` | 枚舉存根：成員離開群組 |
 | P2 工作流引擎 | `WORKFLOW_COMPLETED` | `pf/trigger/workflow_completed` | 工作流完成 |
 | P2 工作流引擎 | `WORKFLOW_FAILED` | `pf/trigger/workflow_failed` | 工作流失敗 |
 | P3 活動時間 | `ACTIVITY_STARTED` | `pf/trigger/activity_started` | 活動開始時（Action Scheduler） |

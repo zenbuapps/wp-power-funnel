@@ -1,0 +1,57 @@
+openapi: 3.0.0
+info:
+  title: LINE 觸發點擴展 - 無新增 REST API
+  version: 1.0.0
+  description: |
+    本次擴展不新增 REST API endpoint。
+
+    影響範圍：
+    - ETriggerPoint enum 新增 5 個 cases（1 個完整實作 + 4 個存根）
+    - TriggerPointService 新增 postback 監聽與 context resolve
+    - context_keys_map 新增 LINE_POSTBACK_RECEIVED 的 keys
+    - trigger_point meta params 支援 postback_action 過濾（v2 格式）
+
+    既有 API 自動生效：
+    - GET /power-funnel/v1/trigger-points 回傳的列表會自動包含新增的 enum cases
+    - GET /power-funnel/v1/trigger-points/context-keys?trigger_point=xxx 會回傳新增的 context keys
+
+paths: {}
+
+components:
+  schemas:
+    TriggerPointPostbackParams:
+      type: object
+      description: LINE_POSTBACK_RECEIVED 觸發點的 trigger_point meta params
+      properties:
+        postback_action:
+          type: string
+          description: |
+            過濾特定的 postback action 值（任意字串匹配）。
+            為空或未填時不過濾，所有 Postback 事件都觸發。
+          example: register
+
+    LinePostbackContext:
+      type: object
+      description: LINE_POSTBACK_RECEIVED 觸發點的 context 欄位
+      required:
+        - line_user_id
+        - event_type
+        - postback_data
+        - postback_action
+      properties:
+        line_user_id:
+          type: string
+          description: LINE 用戶 ID
+          example: U1234567890
+        event_type:
+          type: string
+          description: 事件類型（固定為 postback）
+          example: postback
+        postback_data:
+          type: string
+          description: postback.data 的原始字串
+          example: '{"action":"register","activity_id":"99"}'
+        postback_action:
+          type: string
+          description: 從 postback data JSON 解析出的 action 值，非 JSON 或無 action 時為空字串
+          example: register

@@ -1,0 +1,27 @@
+// LINE 觸發點擴展 - 無新增資料表
+//
+// 本次擴展不新增或修改資料庫結構。
+//
+// 變更範圍僅涉及 PHP enum（ETriggerPoint）和 PHP service（TriggerPointService），
+// 不涉及 wp_posts 或 wp_postmeta 的結構變更。
+//
+// 既有的 trigger_point meta 已支援 v2 物件格式 {"hook": "...", "params": {...}}，
+// 新增的 postback_action 過濾參數存放在 params 中，無需 schema 變更。
+
+// 以下為參考用途，描述 trigger_point meta 的資料格式：
+
+// WorkflowRule 的 trigger_point postmeta 格式（v2）：
+// {
+//   "hook": "pf/trigger/line_postback_received",
+//   "params": {
+//     "postback_action": "register"    // 可選，為空時不過濾
+//   }
+// }
+
+Enum e_trigger_point_line_expansion {
+  line_postback_received  [note: '收到 LINE Postback 後（完整實作）']
+  line_join               [note: 'Bot 被加入群組後（枚舉存根）']
+  line_leave              [note: 'Bot 被移出群組後（枚舉存根）']
+  line_member_joined      [note: '新成員加入群組後（枚舉存根）']
+  line_member_left        [note: '成員離開群組後（枚舉存根）']
+}

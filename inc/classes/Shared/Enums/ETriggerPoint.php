@@ -24,9 +24,22 @@ enum ETriggerPoint : string {
 
 	// ========== P1: LINE 互動觸發點 ==========
 
-	case LINE_FOLLOWED         = self::PREFIX . 'line_followed';
-	case LINE_UNFOLLOWED       = self::PREFIX . 'line_unfollowed';
-	case LINE_MESSAGE_RECEIVED = self::PREFIX . 'line_message_received';
+	case LINE_FOLLOWED          = self::PREFIX . 'line_followed';
+	case LINE_UNFOLLOWED        = self::PREFIX . 'line_unfollowed';
+	case LINE_MESSAGE_RECEIVED  = self::PREFIX . 'line_message_received';
+	case LINE_POSTBACK_RECEIVED = self::PREFIX . 'line_postback_received';
+
+	/** 枚舉存根：Bot 被加入群組（目前無群組事件實作，僅列出供前端顯示） */
+	case LINE_JOIN          = self::PREFIX . 'line_join';
+
+	/** 枚舉存根：Bot 被移出群組（目前無群組事件實作，僅列出供前端顯示） */
+	case LINE_LEAVE         = self::PREFIX . 'line_leave';
+
+	/** 枚舉存根：新成員加入群組（目前無群組事件實作，僅列出供前端顯示） */
+	case LINE_MEMBER_JOINED = self::PREFIX . 'line_member_joined';
+
+	/** 枚舉存根：成員離開群組（目前無群組事件實作，僅列出供前端顯示） */
+	case LINE_MEMBER_LEFT   = self::PREFIX . 'line_member_left';
 
 	// ========== P2: 工作流引擎觸發點 ==========
 
@@ -64,6 +77,11 @@ enum ETriggerPoint : string {
 			self::LINE_FOLLOWED->value          => '用戶關注 LINE 官方帳號後',
 			self::LINE_UNFOLLOWED->value        => '用戶取消關注 LINE 官方帳號後',
 			self::LINE_MESSAGE_RECEIVED->value  => '收到 LINE 訊息後',
+			self::LINE_POSTBACK_RECEIVED->value => '收到 LINE Postback 後',
+			self::LINE_JOIN->value              => 'Bot 被加入群組後',
+			self::LINE_LEAVE->value             => 'Bot 被移出群組後',
+			self::LINE_MEMBER_JOINED->value     => '新成員加入群組後',
+			self::LINE_MEMBER_LEFT->value       => '成員離開群組後',
 
 			self::WORKFLOW_COMPLETED->value     => '工作流完成後',
 			self::WORKFLOW_FAILED->value        => '工作流失敗後',
