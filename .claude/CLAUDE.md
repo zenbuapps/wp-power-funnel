@@ -64,6 +64,40 @@ WorkflowRule (設計時) → trigger_point 觸發 → Workflow (執行時)
     └── 全部完成 → completed / 任一失敗 → failed
 ```
 
+### 最高指導原則：Serializable Context Callable
+
+> **任何 context 都必須以「可序列化的 callable + params」形式儲存，絕不儲存完整物件或使用 Closure。**
+
+工作流引擎的 context 傳遞機制遵循**延遲求值（Deferred Evaluation）**模式：
+
+```php
+// ✅ 正確：string[] callable — 可被 serialize() / unserialize()
+$context_callable_set = [
+    'callable' => [TriggerPointService::class, 'resolve_registration_context'],
+    'params'   => [ $post_id ],
+];
+
+// ❌ 禁止：Closure — 無法被 serialize()，WaitNode 恢復後 context 會丟失
+$context_callable_set = [
+    'callable' => static function ( int $id ): array { ... },
+    'params'   => [ $post_id ],
+];
+```
+
+**規則：**
+
+1. `callable` 型別必須為 `string`（函數名）或 `string[]`（`[ClassName::class, 'method']`）— 禁止 Closure
+2. `params` 必須為純值陣列（int / string / array），禁止物件
+3. 呼叫 `call_user_func_array($callable, $params)` 後回傳 `array<string, string>` 作為 workflow context
+4. Context 在節點**執行時**才求值，不在觸發時快照 — 確保 WaitNode 延遲後仍能取得最新資料
+5. `context_callable_set` 透過 `wp_postmeta` 持久化，必須能安全通過 WordPress 的 `serialize()` / `unserialize()`
+
+**為什麼：** Workflow 可能被 WaitNode 暫停數小時甚至數天，期間 context_callable_set 儲存在 `wp_postmeta`。Action Scheduler 恢復執行時從 DB 反序列化 — Closure 在此處會靜默失敗，導致 context 變成空陣列。
+
+**resolve 方法命名慣例：** `resolve_{domain}_context()`，如 `resolve_registration_context()`、`resolve_line_context()`，置於對應的 Service class 中作為 `public static` 方法。
+
+### 核心元件
+
 - **WorkflowResultDTO 結果碼**：200=成功、301=跳過（match_callback 不符）、500=失敗
 - **WaitNode**：使用 Action Scheduler (`as_schedule_single_action`) 排程延遲，到期後重新觸發 `power_funnel/workflow/running`
 - **ParamHelper**：處理 `context` 參數替換和模板字串取代

@@ -129,17 +129,23 @@ paths:
    - 時間型觸發點：在 `ActivitySchedulerService` 中加入排程邏輯
 4. 觸發點透過 filter `power_funnel/workflow_rule/trigger_points` 可擴充
 
-### context_callable_set 格式
+### context_callable_set 格式（Serializable Context Callable 原則）
+
+callable 必須為 `string`（函數名）或 `string[]`（`[ClassName::class, 'method']`），**禁止 Closure**。
+params 必須為純值陣列（int / string），禁止物件。
+這確保 `context_callable_set` 能安全通過 WordPress `serialize()` / `unserialize()`，WaitNode 延遲恢復後仍可取得 context。
 
 ```php
+// ✅ 正確：靜態方法引用（可序列化）
 [
-    'callable' => static function ( mixed ...$params ): array {
-        return [
-            'key1' => $params[0],  // 觸發點相關的上下文資料
-            'key2' => $params[1],
-        ];
-    },
-    'params' => [ $value1, $value2 ],  // 傳入 callable 的參數
+    'callable' => [ TriggerPointService::class, 'resolve_registration_context' ],
+    'params'   => [ $post_id ],
+]
+
+// ❌ 禁止：Closure（無法序列化，WaitNode 恢復後 context 會丟失）
+[
+    'callable' => static function ( int $id ): array { ... },
+    'params'   => [ $post_id ],
 ]
 ```
 

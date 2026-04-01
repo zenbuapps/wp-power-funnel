@@ -83,6 +83,22 @@ composer install --no-interaction
 
 ## 架構說明
 
+### 核心設計原則：Serializable Context Callable
+
+工作流引擎的 context（業務資料）採用**延遲求值**模式 — 儲存的不是資料本身，而是「如何取得資料」的方法引用：
+
+```php
+$context_callable_set = [
+    'callable' => [TriggerPointService::class, 'resolve_registration_context'],  // 可序列化
+    'params'   => [ $post_id ],                                                   // 純值
+];
+```
+
+- **callable** 必須為 `string`（函數名）或 `string[]`（`[Class::class, 'method']`），禁止 Closure
+- **params** 必須為純值陣列，禁止物件
+- Context 在節點**執行時**才求值，確保 WaitNode 延遲後仍取得最新資料
+- `context_callable_set` 透過 `wp_postmeta` 持久化，必須能安全通過 `serialize()` / `unserialize()`
+
 ### 工作流引擎 (Workflow Engine)
 
 ```
@@ -92,9 +108,12 @@ WorkflowRule 發佈 → 在 trigger_point hook 掛載監聽
         ↓
 Trigger 觸發（如：用戶報名活動）
         ↓
+TriggerPointService 組裝 context_callable_set（callable + params）
+        ↓
 建立 Workflow 實例（pf_workflow CPT，status: running）
         ↓
 WorkflowDTO::try_execute() 逐節點執行
+  └─ 每個節點執行時，call_user_func_array(callable, params) 取得最新 context
         ↓
 每節點執行完 → do_next() → 下一節點
         ↓
@@ -165,13 +184,26 @@ add_filter('power_funnel/workflow_rule/trigger_points', function(array $trigger_
 
 **觸發工作流**
 
-新增觸發點後，在適當的時機呼叫 `do_action` 觸發工作流：
+新增觸發點後，在適當的時機呼叫 `do_action` 觸發工作流。必須傳入 `context_callable_set`（可序列化的 callable + params），不可傳入 Closure 或完整物件：
 
 ```php
-do_action('pf/trigger/my_event', $context);
+// 在 TriggerPointService 中定義靜態解析方法
+public static function resolve_my_event_context( int $order_id ): array {
+    return [
+        'order_id'  => (string) $order_id,
+        'user_email' => get_post_meta($order_id, 'email', true),
+    ];
+}
+
+// 觸發時組裝 context_callable_set
+$context_callable_set = [
+    'callable' => [TriggerPointService::class, 'resolve_my_event_context'],
+    'params'   => [ $order_id ],
+];
+do_action('pf/trigger/my_event', $context_callable_set);
 ```
 
-`$context` 為傳遞給工作流節點的參數陣列，可包含 `user_id`、`post_id` 等業務資料。
+`callable` 必須為 `string` 或 `string[]`（禁止 Closure），`params` 必須為純值陣列。詳見「核心設計原則：Serializable Context Callable」。
 
 ## Custom Post Types
 
