@@ -7,7 +7,6 @@ namespace J7\PowerFunnel\Infrastructure\Repositories\WorkflowRule\NodeDefinition
 use J7\PowerFunnel\Contracts\DTOs\NodeDTO;
 use J7\PowerFunnel\Contracts\DTOs\WorkflowDTO;
 use J7\PowerFunnel\Contracts\DTOs\WorkflowResultDTO;
-use J7\PowerFunnel\Infrastructure\Repositories\WorkflowRule\ParamHelper;
 use J7\PowerFunnel\Shared\Enums\ENodeType;
 use J7\PowerFunnel\Shared\Enums\EWorkflowStatus;
 use J7\Powerhouse\Contracts\DTOs\FormFieldDTO;
@@ -85,8 +84,7 @@ final class WaitNode extends BaseNodeDefinition {
 	}
 
 	/**
-	 * 執行回調
-	 * 執行最後呼叫 $workflow->do_next()
+	 * 執行回調：依 duration + unit 計算 Unix timestamp，並透過 Action Scheduler 排程延遲
 	 *
 	 * @param NodeDTO     $node 節點
 	 * @param WorkflowDTO $workflow 當前 workflow 資料
@@ -94,27 +92,82 @@ final class WaitNode extends BaseNodeDefinition {
 	 * @return WorkflowResultDTO 結果
 	 */
 	public function execute( NodeDTO $node, WorkflowDTO $workflow ): WorkflowResultDTO {
-		$param_helper = new ParamHelper( $node, $workflow );
-		// TODO
-		$timestamp = $param_helper->try_get_param( 'timestamp');
+		// 支援的時間單位（秒數）對照表
+		$unit_seconds = [
+			'minutes' => 60,
+			'hours'   => 3600,
+			'days'    => 86400,
+		];
 
-		$status = EWorkflowStatus::RUNNING;
+		// 支援的時間單位（中文顯示名稱）對照表
+		$unit_labels = [
+			'minutes' => '分鐘',
+			'hours'   => '小時',
+			'days'    => '天',
+		];
 
+		// 驗證 duration 參數：必須存在且轉型後大於 0
+		$duration_raw = (string) ( $node->params['duration'] ?? '' );
+		$duration     = (int) $duration_raw;
+		if ( $duration_raw === '' || $duration <= 0 ) {
+			return new WorkflowResultDTO(
+				[
+					'node_id' => $node->id,
+					'code'    => 500,
+					'message' => 'WaitNode 執行失敗：duration 必須為大於 0 的整數',
+				]
+			);
+		}
+
+		// 驗證 unit 參數：必須存在且在支援清單中
+		$unit = (string) ( $node->params['unit'] ?? '' );
+		if ( $unit === '' ) {
+			return new WorkflowResultDTO(
+				[
+					'node_id' => $node->id,
+					'code'    => 500,
+					'message' => 'WaitNode 執行失敗：缺少 unit，支援 minutes / hours / days',
+				]
+			);
+		}
+		if ( ! \array_key_exists( $unit, $unit_seconds ) ) {
+			return new WorkflowResultDTO(
+				[
+					'node_id' => $node->id,
+					'code'    => 500,
+					'message' => "WaitNode 執行失敗：不支援的 unit「{$unit}」，支援 minutes / hours / days",
+				]
+			);
+		}
+
+		// 計算目標 Unix timestamp（相對於當前時間）
+		$timestamp = \time() + $duration * $unit_seconds[ $unit ];
+
+		// 透過 Action Scheduler 排程，到期後重新觸發 workflow 繼續執行
 		$action_id = \as_schedule_single_action(
 			$timestamp,
-			"power_funnel/workflow/{$status->value}",
-			[
-				'workflow_id' => $workflow->id,
-			]
+			'power_funnel/workflow/' . EWorkflowStatus::RUNNING->value,
+			[ 'workflow_id' => $workflow->id ]
+		);
+
+		// action_id 為 0 代表排程失敗（例如 AS 去重機制）
+		if ( ! $action_id ) {
+			return new WorkflowResultDTO(
+				[
+					'node_id' => $node->id,
+					'code'    => 500,
+					'message' => 'WaitNode 執行失敗：排程失敗',
+				]
 			);
+		}
 
 		return new WorkflowResultDTO(
 			[
 				'node_id'   => $node->id,
-				'code'      => $action_id ? 200 : 500,
-				'message'   => $action_id ? '等待中' : '等待排程失敗',
-				'scheduled' => (bool) $action_id,
+				'code'      => 200,
+				'message'   => "等待 {$duration} {$unit_labels[ $unit ]}",
+				'scheduled' => true,
 			]
-			);
+		);
 	}
 }
