@@ -1,5 +1,5 @@
 import { FaLine, FaRobot } from 'react-icons/fa6'
-import { SettingOutlined } from '@ant-design/icons'
+import { SettingOutlined, MonitorOutlined } from '@ant-design/icons'
 
 export const resources = [
 	{
@@ -20,6 +20,15 @@ export const resources = [
 			canDelete: true,
 			label: '自動化',
 			icon: <FaRobot />,
+		},
+	},
+	{
+		name: 'workflows',
+		list: '/workflows',
+		show: '/workflows/show/:id',
+		meta: {
+			label: '執行監控',
+			icon: <MonitorOutlined />,
 		},
 	},
 	{

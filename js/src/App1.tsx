@@ -7,6 +7,8 @@ import {
 	PromoLinksList,
 	WorkflowRulesList,
 	WorkflowRulesEdit,
+	WorkflowsList,
+	WorkflowsShow,
 	Settings,
 } from '@/pages'
 
@@ -96,6 +98,10 @@ function App() {
 								<Route path="workflow-rules">
 									<Route index element={<WorkflowRulesList />} />
 									<Route path="edit/:id" element={<WorkflowRulesEdit />} />
+								</Route>
+								<Route path="workflows">
+									<Route index element={<WorkflowsList />} />
+									<Route path="show/:id" element={<WorkflowsShow />} />
 								</Route>
 								<Route path="settings" element={<Settings />} />
 								<Route path="*" element={<ErrorComponent />} />

@@ -1,0 +1,64 @@
+/**
+ * ReadonlyFlowCanvas 節點狀態樣式
+ * BEM 命名慣例：pf-flow-node--status-*
+ */
+
+/* 成功：綠色邊框 */
+.pf-flow-node--status-success {
+	border-color: #52c41a !important;
+	border-left-color: #52c41a !important;
+}
+
+/* 跳過：灰色邊框 */
+.pf-flow-node--status-skipped {
+	border-color: #d9d9d9 !important;
+	border-left-color: #d9d9d9 !important;
+	opacity: 0.7;
+}
+
+/* 失敗：紅色邊框 */
+.pf-flow-node--status-failed {
+	border-color: #ff4d4f !important;
+	border-left-color: #ff4d4f !important;
+}
+
+/* 執行中：藍色邊框 + 動畫 */
+.pf-flow-node--status-running {
+	border-color: #1890ff !important;
+	border-left-color: #1890ff !important;
+	animation: pf-flow-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pf-flow-pulse {
+	0%,
+	100% {
+		box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+	}
+	50% {
+		box-shadow: 0 2px 16px rgba(24, 144, 255, 0.4);
+	}
+}
+
+/* 狀態徽章 */
+.pf-flow-node__badge {
+	display: inline-flex;
+	align-items: center;
+	margin-left: auto;
+	font-size: 16px;
+}
+
+.pf-flow-node__badge--success {
+	color: #52c41a;
+}
+
+.pf-flow-node__badge--skipped {
+	color: #d9d9d9;
+}
+
+.pf-flow-node__badge--failed {
+	color: #ff4d4f;
+}
+
+.pf-flow-node__badge--running {
+	color: #1890ff;
+}
