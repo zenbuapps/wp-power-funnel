@@ -210,22 +210,27 @@ class WorkflowRuleRepositoryTest extends IntegrationTestCase {
 	}
 
 	/**
-	 * 快樂路徑：get_trigger_points 回傳所有已註冊的觸發點
+	 * 快樂路徑：get_trigger_points 回傳分組結構的觸發點清單
 	 *
 	 * @group happy
 	 */
 	public function test_get_trigger_points回傳所有觸發點(): void {
 		// When 取得所有觸發點
-		$trigger_points = Repository::get_trigger_points();
+		$trigger_point_groups = Repository::get_trigger_points();
 
 		// Then 應回傳非空陣列
-		$this->assertIsArray($trigger_points, '應回傳陣列');
-		$this->assertNotEmpty($trigger_points, '應有至少一個觸發點');
+		$this->assertIsArray($trigger_point_groups, '應回傳陣列');
+		$this->assertNotEmpty($trigger_point_groups, '應有至少一個分組');
 
-		// Then 每個觸發點應有 hook 與 name 屬性
-		foreach ($trigger_points as $hook => $dto) {
-			$this->assertIsString($hook, 'hook 名稱應為字串');
-			$this->assertNotEmpty($hook, 'hook 名稱不可為空');
+		// Then 每個元素應為 TriggerPointGroupDTO
+		foreach ($trigger_point_groups as $group) {
+			$this->assertInstanceOf(
+				\J7\PowerFunnel\Contracts\DTOs\TriggerPointGroupDTO::class,
+				$group,
+				'每個元素應為 TriggerPointGroupDTO'
+			);
+			$this->assertIsString($group->group, 'group 應為字串');
+			$this->assertNotEmpty($group->group, 'group 不可為空');
 		}
 	}
 

@@ -1,0 +1,8 @@
+[ACTIVITY] 觸發點分組選擇
+[ACTOR] 管理員 -> {specs/actors/admin.md}
+[ACTOR] 系統 -> {specs/actors/system.md}
+
+[STEP:1] @系統 {features/trigger-point/query-grouped-trigger-points.feature}
+[STEP:2] @管理員 {features/trigger-point/select-trigger-point-with-group.feature}
+[STEP:3] @管理員 {features/trigger-point/search-trigger-point.feature}
+[STEP:4] @管理員 {features/trigger-point/filter-trigger-point-in-list.feature}

@@ -1,0 +1,18 @@
+// 本需求不新增資料表。
+// 觸發點資料來源為 PHP ETriggerPoint enum，非資料庫儲存。
+// 分組資訊由 ETriggerPoint::group() 方法提供，硬編碼於 enum 中。
+// disabled 狀態由 ETriggerPoint::is_stub() 方法提供。
+//
+// 以下為相關的既有 enum 定義，供參考：
+
+Enum trigger_point_group {
+  registration      [note: '報名狀態']
+  line_interaction   [note: 'LINE 互動']
+  line_group         [note: 'LINE 群組']
+  workflow           [note: '工作流引擎']
+  activity           [note: '活動時間']
+  user_behavior      [note: '用戶行為']
+  woocommerce        [note: 'WooCommerce']
+
+  Note: '觸發點分組枚舉，對應 ETriggerPoint::group() 回傳值'
+}

@@ -3,7 +3,7 @@
  * 查詢觸發條件列表 整合測試。
  *
  * 驗證 GET /wp-json/power-funnel/trigger-points 端點的行為。
- * 包含：未授權存取、成功查詢、filter 擴充、回應格式驗證。
+ * 包含：未授權存取、成功查詢、filter 擴充、分組回應格式驗證。
  *
  * @group smoke
  * @group workflow-rule
@@ -91,20 +91,18 @@ class QueryTriggerPointsTest extends IntegrationTestCase {
 		$this->assertSame(200, $response->get_status(), '應回傳 200');
 	}
 
-	// ========== Rule: 回應應包含所有已註冊的觸發點 ==========
+	// ========== Rule: 回應應為分組結構 ==========
 
 	/**
 	 * Feature: 查詢觸發條件列表
-	 * Example: 僅有預設觸發點時回傳預設列表（包含所有 21 個觸發點，含 LINE 擴展 5 個）
+	 * Example: 回傳 7 個分組的觸發點清單（不含 REGISTRATION_CREATED）
 	 *
 	 * @group happy
 	 */
-	public function test_僅有預設觸發點時回傳預設列表(): void {
+	public function test_回傳7個分組的觸發點清單(): void {
 		// Given 管理員 "Admin" 已登入
 		$admin_id = $this->factory()->user->create(['role' => 'administrator']);
 		\wp_set_current_user($admin_id);
-
-		// And 無第三方開發者透過 filter 擴充觸發點（無需額外操作，測試環境預設狀態）
 
 		// When 管理員 "Admin" 查詢觸發條件列表
 		$request  = new \WP_REST_Request('GET', '/power-funnel/trigger-points');
@@ -113,24 +111,28 @@ class QueryTriggerPointsTest extends IntegrationTestCase {
 		// Then 操作成功
 		$this->assertSame(200, $response->get_status(), '應回傳 200');
 
-		// And 查詢結果應包含預設觸發點
+		// And 查詢結果應為分組結構
 		$data = $response->get_data();
 		$this->assertIsArray($data, 'response data 應為陣列');
 		$this->assertArrayHasKey('data', $data, 'response 應有 data 欄位');
 		$this->assertIsArray($data['data'], 'data.data 應為陣列');
+		$this->assertCount(7, $data['data'], '應有 7 個分組');
 
-		$hooks = \array_column($data['data'], 'hook');
-
-		// 驗證所有觸發點均出現在回應中
-		$expected_hooks = array_map(fn ( ETriggerPoint $case ) => $case->value, ETriggerPoint::cases());
-		$this->assertCount(21, ETriggerPoint::cases(), 'ETriggerPoint 應有 21 個 case（含 LINE 擴展 5 個）');
-
-		foreach ($expected_hooks as $expected_hook) {
-			$this->assertContains($expected_hook, $hooks, "應包含觸發點 {$expected_hook}");
+		// And 不包含 REGISTRATION_CREATED
+		$all_hooks = [];
+		foreach ($data['data'] as $group) {
+			foreach ($group['items'] as $item) {
+				$all_hooks[] = $item['hook'];
+			}
 		}
+		$this->assertNotContains(
+			ETriggerPoint::REGISTRATION_CREATED->value,
+			$all_hooks,
+			'回應不應包含已棄用的 REGISTRATION_CREATED'
+		);
 
-		// 驗證回應中至少有 15 個觸發點
-		$this->assertGreaterThanOrEqual(15, count($data['data']), '回應應至少包含 15 個觸發點');
+		// 驗證回應中共有 20 個觸發點
+		$this->assertCount(20, $all_hooks, '應共有 20 個觸發點');
 	}
 
 	/**
@@ -144,14 +146,14 @@ class QueryTriggerPointsTest extends IntegrationTestCase {
 		$admin_id = $this->factory()->user->create(['role' => 'administrator']);
 		\wp_set_current_user($admin_id);
 
-		// And 第三方開發者透過 filter 新增觸發點 pf/trigger/order_completed
+		// And 第三方開發者透過 filter 新增觸發點 pf/trigger/custom_event
 		\add_filter(
 			'power_funnel/workflow_rule/trigger_points',
 			static function ( array $dtos ): array {
-				$dtos['pf/trigger/order_completed'] = new \J7\PowerFunnel\Contracts\DTOs\TriggerPointDTO(
+				$dtos['pf/trigger/custom_event'] = new \J7\PowerFunnel\Contracts\DTOs\TriggerPointDTO(
 					[
-						'hook' => 'pf/trigger/order_completed',
-						'name' => '訂單完成後',
+						'hook' => 'pf/trigger/custom_event',
+						'name' => '自訂事件',
 					]
 				);
 				return $dtos;
@@ -165,26 +167,36 @@ class QueryTriggerPointsTest extends IntegrationTestCase {
 		// Then 操作成功
 		$this->assertSame(200, $response->get_status(), '應回傳 200');
 
-		// And 查詢結果應包含預設與擴充的觸發點
+		// And 查詢結果應包含分組資料
 		$data  = $response->get_data();
 		$this->assertIsArray($data, 'response data 應為陣列');
 		$this->assertArrayHasKey('data', $data, 'response 應有 data 欄位');
 		$this->assertIsArray($data['data'], 'data.data 應為陣列');
 
-		$hooks = \array_column($data['data'], 'hook');
-		$this->assertContains('pf/trigger/registration_approved', $hooks, '應包含預設觸發點 registration_approved');
-		$this->assertContains('pf/trigger/order_completed', $hooks, '應包含第三方擴充的觸發點');
+		// And 所有 hooks 集合中應包含預設觸發點
+		$all_hooks = [];
+		foreach ($data['data'] as $group) {
+			foreach ($group['items'] as $item) {
+				$all_hooks[] = $item['hook'];
+			}
+		}
+
+		$this->assertContains(
+			'pf/trigger/registration_approved',
+			$all_hooks,
+			'應包含預設觸發點 registration_approved'
+		);
 	}
 
-	// ========== Rule: 每個觸發點應包含 hook 與 name 欄位 ==========
+	// ========== Rule: 每個觸發點應包含 hook、name、disabled 欄位 ==========
 
 	/**
 	 * Feature: 查詢觸發條件列表
-	 * Example: 回應格式正確
+	 * Example: 回應格式正確，每個群組包含 group、group_label、items，每個 item 包含 hook、name、disabled
 	 *
 	 * @group happy
 	 */
-	public function test_回應格式正確每個觸發點包含hook與name(): void {
+	public function test_回應格式正確每個觸發點包含hook與name與disabled(): void {
 		// Given 管理員 "Admin" 已登入
 		$admin_id = $this->factory()->user->create(['role' => 'administrator']);
 		\wp_set_current_user($admin_id);
@@ -196,7 +208,7 @@ class QueryTriggerPointsTest extends IntegrationTestCase {
 		// Then 操作成功
 		$this->assertSame(200, $response->get_status(), '應回傳 200');
 
-		// And 每個觸發點項目應包含 hook(string) 與 name(string) 欄位
+		// And 回應有正確的頂層結構
 		$data = $response->get_data();
 		$this->assertIsArray($data, 'response data 應為陣列');
 		$this->assertArrayHasKey('code', $data, 'response 應有 code 欄位');
@@ -205,12 +217,26 @@ class QueryTriggerPointsTest extends IntegrationTestCase {
 		$this->assertIsArray($data['data'], 'data.data 應為陣列');
 		$this->assertNotEmpty($data['data'], 'data.data 不應為空');
 
-		foreach ($data['data'] as $item) {
-			$this->assertIsArray($item, '每個觸發點應為陣列');
-			$this->assertArrayHasKey('hook', $item, '觸發點應有 hook 欄位');
-			$this->assertArrayHasKey('name', $item, '觸發點應有 name 欄位');
-			$this->assertIsString($item['hook'], 'hook 應為字串');
-			$this->assertIsString($item['name'], 'name 應為字串');
+		// And 每個群組有正確的欄位
+		foreach ($data['data'] as $group) {
+			$this->assertIsArray($group, '每個群組應為陣列');
+			$this->assertArrayHasKey('group', $group, '群組應有 group 欄位');
+			$this->assertArrayHasKey('group_label', $group, '群組應有 group_label 欄位');
+			$this->assertArrayHasKey('items', $group, '群組應有 items 欄位');
+			$this->assertIsString($group['group'], 'group 應為字串');
+			$this->assertIsString($group['group_label'], 'group_label 應為字串');
+			$this->assertIsArray($group['items'], 'items 應為陣列');
+
+			// And 每個 item 有正確的欄位
+			foreach ($group['items'] as $item) {
+				$this->assertIsArray($item, '每個觸發點應為陣列');
+				$this->assertArrayHasKey('hook', $item, '觸發點應有 hook 欄位');
+				$this->assertArrayHasKey('name', $item, '觸發點應有 name 欄位');
+				$this->assertArrayHasKey('disabled', $item, '觸發點應有 disabled 欄位');
+				$this->assertIsString($item['hook'], 'hook 應為字串');
+				$this->assertIsString($item['name'], 'name 應為字串');
+				$this->assertIsBool($item['disabled'], 'disabled 應為布林值');
+			}
 		}
 	}
 

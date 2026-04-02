@@ -1,0 +1,77 @@
+openapi: 3.0.0
+info:
+  title: Power Funnel - TriggerPoint Grouping API
+  version: 1.0.0
+
+paths:
+  /trigger-points:
+    get:
+      operationId: getGroupedTriggerPoints
+      summary: 查詢分組觸發點清單
+      description: |
+        回傳所有已註冊的觸發點，以分組結構組織。
+        已棄用的 REGISTRATION_CREATED 不包含在回傳結果中。
+        枚舉存根項目標記為 disabled: true，名稱帶有「（即將推出）」後綴。
+      responses:
+        '200':
+          description: 操作成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code, message, data]
+                properties:
+                  code:
+                    type: string
+                    example: operation_success
+                  message:
+                    type: string
+                    example: 操作成功
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TriggerPointGroup'
+
+components:
+  schemas:
+    TriggerPointGroup:
+      type: object
+      required: [group, group_label, items]
+      properties:
+        group:
+          type: string
+          description: 分組 key
+          enum:
+            - registration
+            - line_interaction
+            - line_group
+            - workflow
+            - activity
+            - user_behavior
+            - woocommerce
+          example: registration
+        group_label:
+          type: string
+          description: 分組顯示名稱（繁體中文）
+          example: 報名狀態
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TriggerPointItem'
+
+    TriggerPointItem:
+      type: object
+      required: [hook, name, disabled]
+      properties:
+        hook:
+          type: string
+          description: 觸發點的 hook 值，對應 ETriggerPoint enum value
+          example: pf/trigger/registration_approved
+        name:
+          type: string
+          description: 觸發點顯示名稱（繁體中文）；枚舉存根帶「（即將推出）」後綴
+          example: 用戶報名審核通過後
+        disabled:
+          type: boolean
+          description: 是否為枚舉存根（尚未實作），true 表示前端應顯示為不可選
+          example: false

@@ -14,4 +14,7 @@ final class TriggerPointDTO extends DTO {
 
 	/** @var string hook */
 	public string $hook;
+
+	/** @var bool 是否為已停用（枚舉存根）的觸發點 */
+	public bool $disabled = false;
 }

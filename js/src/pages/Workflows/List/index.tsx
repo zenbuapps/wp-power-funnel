@@ -59,8 +59,11 @@ const STATUS_OPTIONS = Object.values(WORKFLOW_STATUS).map((value) => ({
 const WorkflowsListComponent = () => {
 	const apiUrl = useApiUrl('power-funnel')
 	const { show, edit } = useNavigation()
-	const { options: triggerPointOptions, labelMap: triggerPointLabelMap } =
-		useTriggerPoints()
+	const {
+		groupedOptions,
+		labelMap: triggerPointLabelMap,
+		groupLabelMap: triggerPointGroupLabelMap,
+	} = useTriggerPoints()
 
 	/** 分頁狀態 */
 	const [currentPage, setCurrentPage] = useState(1)
@@ -270,11 +273,23 @@ const WorkflowsListComponent = () => {
 						/>
 						<Select
 							placeholder="篩選觸發點"
-							options={triggerPointOptions}
+							options={groupedOptions}
 							value={filters.triggerPoint || undefined}
 							onChange={handleTriggerPointChange}
 							style={{ minWidth: 200 }}
 							allowClear
+							showSearch
+							optionFilterProp="label"
+							filterOption={(input, option) => {
+								const lower = input.toLowerCase()
+								const labelMatch =
+									(option?.label as string)?.toLowerCase().includes(lower) ??
+									false
+								const groupLabel =
+									triggerPointGroupLabelMap[option?.value as string] ?? ''
+								const groupMatch = groupLabel.toLowerCase().includes(lower)
+								return labelMatch || groupMatch
+							}}
 						/>
 						<Input.Search
 							placeholder="搜尋訊息..."

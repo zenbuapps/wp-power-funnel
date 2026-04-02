@@ -30,16 +30,16 @@ enum ETriggerPoint : string {
 	case LINE_POSTBACK_RECEIVED = self::PREFIX . 'line_postback_received';
 
 	/** 枚舉存根：Bot 被加入群組（目前無群組事件實作，僅列出供前端顯示） */
-	case LINE_JOIN          = self::PREFIX . 'line_join';
+	case LINE_JOIN = self::PREFIX . 'line_join';
 
 	/** 枚舉存根：Bot 被移出群組（目前無群組事件實作，僅列出供前端顯示） */
-	case LINE_LEAVE         = self::PREFIX . 'line_leave';
+	case LINE_LEAVE = self::PREFIX . 'line_leave';
 
 	/** 枚舉存根：新成員加入群組（目前無群組事件實作，僅列出供前端顯示） */
 	case LINE_MEMBER_JOINED = self::PREFIX . 'line_member_joined';
 
 	/** 枚舉存根：成員離開群組（目前無群組事件實作，僅列出供前端顯示） */
-	case LINE_MEMBER_LEFT   = self::PREFIX . 'line_member_left';
+	case LINE_MEMBER_LEFT = self::PREFIX . 'line_member_left';
 
 	// ========== P2: 工作流引擎觸發點 ==========
 
@@ -96,5 +96,80 @@ enum ETriggerPoint : string {
 			self::ORDER_COMPLETED->value        => '訂單完成後',
 		];
 		return $mapper[ $this->value ];
+	}
+
+	/**
+	 * 所屬群組 key（用於 API 分組結構）
+	 *
+	 * @return string 群組 key
+	 */
+	public function group(): string {
+		$mapper = [
+			self::REGISTRATION_CREATED->value   => 'registration',
+			self::REGISTRATION_APPROVED->value  => 'registration',
+			self::REGISTRATION_REJECTED->value  => 'registration',
+			self::REGISTRATION_CANCELLED->value => 'registration',
+			self::REGISTRATION_FAILED->value    => 'registration',
+
+			self::LINE_FOLLOWED->value          => 'line_interaction',
+			self::LINE_UNFOLLOWED->value        => 'line_interaction',
+			self::LINE_MESSAGE_RECEIVED->value  => 'line_interaction',
+			self::LINE_POSTBACK_RECEIVED->value => 'line_interaction',
+
+			self::LINE_JOIN->value              => 'line_group',
+			self::LINE_LEAVE->value             => 'line_group',
+			self::LINE_MEMBER_JOINED->value     => 'line_group',
+			self::LINE_MEMBER_LEFT->value       => 'line_group',
+
+			self::WORKFLOW_COMPLETED->value     => 'workflow',
+			self::WORKFLOW_FAILED->value        => 'workflow',
+
+			self::ACTIVITY_STARTED->value       => 'activity',
+			self::ACTIVITY_BEFORE_START->value  => 'activity',
+			self::ACTIVITY_ENDED->value         => 'activity',
+
+			self::USER_TAGGED->value            => 'user_behavior',
+			self::PROMO_LINK_CLICKED->value     => 'user_behavior',
+
+			self::ORDER_COMPLETED->value        => 'woocommerce',
+		];
+		return $mapper[ $this->value ];
+	}
+
+	/**
+	 * 所屬群組中文標籤（用於前端 OptGroup 顯示）
+	 *
+	 * @return string 群組中文標籤
+	 */
+	public function group_label(): string {
+		$label_map = [
+			'registration'     => '報名狀態',
+			'line_interaction' => 'LINE 互動',
+			'line_group'       => 'LINE 群組',
+			'workflow'         => '工作流引擎',
+			'activity'         => '活動時間',
+			'user_behavior'    => '用戶行為',
+			'woocommerce'      => 'WooCommerce',
+		];
+		return $label_map[ $this->group() ];
+	}
+
+	/**
+	 * 是否為枚舉存根（目前尚未實作的觸發點）
+	 *
+	 * 存根觸發點在 API 回應中標記為 disabled，名稱帶有「（即將推出）」後綴。
+	 *
+	 * @return bool 是否為枚舉存根
+	 */
+	public function is_stub(): bool {
+		return match ($this) {
+			self::LINE_JOIN,
+			self::LINE_LEAVE,
+			self::LINE_MEMBER_JOINED,
+			self::LINE_MEMBER_LEFT,
+			self::ACTIVITY_ENDED,
+			self::PROMO_LINK_CLICKED => true,
+			default                  => false,
+		};
 	}
 }

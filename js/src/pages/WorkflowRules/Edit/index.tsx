@@ -19,15 +19,14 @@ const EditComponent = () => {
 	const { id } = useParsed()
 	const flowRef = useRef<TFlowCanvasRef>(null)
 	const {
-		options: triggerPointOptions,
+		groupedOptions,
 		labelMap: triggerPointLabelMap,
+		groupLabelMap: triggerPointGroupLabelMap,
 		isLoading: triggerPointsLoading,
 	} = useTriggerPoints()
 
-	const {
-		definitions: nodeDefinitions,
-		definitionsMap: nodeDefinitionsMap,
-	} = useNodeDefinitions()
+	const { definitions: nodeDefinitions, definitionsMap: nodeDefinitionsMap } =
+		useNodeDefinitions()
 
 	const { formProps, form, saveButtonProps, query, mutation, onFinish } =
 		useForm<TWorkflowRuleRecord, HttpError, Partial<TWorkflowRuleRecord>>({
@@ -111,10 +110,23 @@ const EditComponent = () => {
 							</Item>
 							<Item name={['trigger_point']} label="觸發條件">
 								<Select
-									options={triggerPointOptions}
+									options={groupedOptions}
 									loading={triggerPointsLoading}
 									placeholder="選擇觸發條件"
 									allowClear
+									showSearch
+									optionFilterProp="label"
+									filterOption={(input, option) => {
+										const lower = input.toLowerCase()
+										const labelMatch =
+											(option?.label as string)
+												?.toLowerCase()
+												.includes(lower) ?? false
+										const groupLabel =
+											triggerPointGroupLabelMap[option?.value as string] ?? ''
+										const groupMatch = groupLabel.toLowerCase().includes(lower)
+										return labelMatch || groupMatch
+									}}
 								/>
 							</Item>
 						</div>
