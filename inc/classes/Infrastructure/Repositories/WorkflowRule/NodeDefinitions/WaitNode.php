@@ -110,9 +110,10 @@ final class WaitNode extends BaseNodeDefinition {
 
 		return new WorkflowResultDTO(
 			[
-				'node_id' => $node->id,
-				'code'    => $action_id ? 200 : 500,
-				'message' => $action_id ? '等待中' : '等待排程失敗',
+				'node_id'   => $node->id,
+				'code'      => $action_id ? 200 : 500,
+				'message'   => $action_id ? '等待中' : '等待排程失敗',
+				'scheduled' => (bool) $action_id,
 			]
 			);
 	}

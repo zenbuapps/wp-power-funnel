@@ -7,6 +7,7 @@ namespace J7\PowerFunnel\Infrastructure\Repositories\WorkflowRule\NodeDefinition
 use J7\PowerFunnel\Contracts\DTOs\NodeDTO;
 use J7\PowerFunnel\Contracts\DTOs\WorkflowDTO;
 use J7\PowerFunnel\Contracts\DTOs\WorkflowResultDTO;
+use J7\PowerFunnel\Infrastructure\Repositories\WorkflowRule\ParamHelper;
 use J7\PowerFunnel\Shared\Enums\ENodeType;
 use J7\Powerhouse\Contracts\DTOs\FormFieldDTO;
 
@@ -102,15 +103,93 @@ final class WebhookNode extends BaseNodeDefinition {
 	}
 
 	/**
-	 * 執行回調
+	 * 執行回調：使用 wp_remote_request() 發送 HTTP Webhook 請求
 	 *
 	 * @param NodeDTO     $node 節點
 	 * @param WorkflowDTO $workflow 當前 workflow 資料
 	 *
 	 * @return WorkflowResultDTO 結果
-	 * @throws \BadMethodCallException 尚未實作
 	 */
 	public function execute( NodeDTO $node, WorkflowDTO $workflow ): WorkflowResultDTO {
-		throw new \BadMethodCallException('WebhookNode::execute() is not implemented yet');
+		$param_helper = new ParamHelper( $node, $workflow );
+
+		// 取得 URL（必填）
+		$url = (string) ( $node->params['url'] ?? '' );
+		if ( $url === '' ) {
+			return new WorkflowResultDTO(
+				[
+					'node_id' => $node->id,
+					'code'    => 500,
+					'message' => 'WebhookNode 執行失敗：缺少 url',
+				]
+			);
+		}
+
+		// 取得 HTTP 方法（預設 POST）
+		$method = (string) ( $node->params['method'] ?? 'POST' );
+		if ( $method === '' ) {
+			$method = 'POST';
+		}
+
+		// 解析 headers（JSON 格式，允許空字串）
+		$headers_raw = (string) ( $node->params['headers'] ?? '' );
+		$headers     = [];
+		if ( $headers_raw !== '' ) {
+			$decoded = \json_decode( $headers_raw, true );
+			if ( !\is_array( $decoded ) ) {
+				return new WorkflowResultDTO(
+					[
+						'node_id' => $node->id,
+						'code'    => 500,
+						'message' => 'WebhookNode 執行失敗：headers 不是合法 JSON',
+					]
+				);
+			}
+			$headers = $decoded;
+		}
+
+		// 渲染 body（支援 {{variable}} 模板替換）
+		$body = $param_helper->replace( (string) ( $node->params['body_tpl'] ?? '' ) );
+
+		// 發送 HTTP 請求
+		$response = \wp_remote_request(
+			$url,
+			[
+				'method'  => $method,
+				'headers' => $headers,
+				'body'    => $body,
+			]
+		);
+
+		// 處理 WP_Error
+		if ( \is_wp_error( $response ) ) {
+			return new WorkflowResultDTO(
+				[
+					'node_id' => $node->id,
+					'code'    => 500,
+					'message' => 'WebhookNode 執行失敗：' . $response->get_error_message(),
+				]
+			);
+		}
+
+		// 判斷 HTTP status code
+		$status_code = (int) \wp_remote_retrieve_response_code( $response );
+		if ( $status_code >= 200 && $status_code < 300 ) {
+			return new WorkflowResultDTO(
+				[
+					'node_id' => $node->id,
+					'code'    => 200,
+					'message' => 'Webhook 發送成功',
+				]
+			);
+		}
+
+		return new WorkflowResultDTO(
+			[
+				'node_id' => $node->id,
+				'code'    => 500,
+				'message' => "WebhookNode 執行失敗：HTTP {$status_code}",
+			]
+		);
 	}
 }

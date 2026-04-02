@@ -7,6 +7,7 @@ namespace J7\PowerFunnel\Infrastructure\Repositories\WorkflowRule\NodeDefinition
 use J7\PowerFunnel\Contracts\DTOs\NodeDTO;
 use J7\PowerFunnel\Contracts\DTOs\WorkflowDTO;
 use J7\PowerFunnel\Contracts\DTOs\WorkflowResultDTO;
+use J7\PowerFunnel\Infrastructure\Repositories\WorkflowRule\ParamHelper;
 use J7\PowerFunnel\Shared\Enums\ENodeType;
 use J7\Powerhouse\Contracts\DTOs\FormFieldDTO;
 
@@ -63,15 +64,55 @@ final class SmsNode extends BaseNodeDefinition {
 	}
 
 	/**
-	 * 執行回調
+	 * 執行回調：透過 WordPress filter 委派 SMS 發送
 	 *
 	 * @param NodeDTO     $node 節點
 	 * @param WorkflowDTO $workflow 當前 workflow 資料
 	 *
 	 * @return WorkflowResultDTO 結果
-	 * @throws \BadMethodCallException 尚未實作
 	 */
 	public function execute( NodeDTO $node, WorkflowDTO $workflow ): WorkflowResultDTO {
-		throw new \BadMethodCallException('SmsNode::execute() is not implemented yet');
+		$param_helper = new ParamHelper( $node, $workflow );
+
+		// 取得並渲染收件人（支援 {{variable}} 模板替換）
+		$recipient = $param_helper->replace( (string) ( $node->params['recipient'] ?? '' ) );
+		if ( $recipient === '' ) {
+			return new WorkflowResultDTO(
+				[
+					'node_id' => $node->id,
+					'code'    => 500,
+					'message' => 'SmsNode 執行失敗：缺少 recipient',
+				]
+			);
+		}
+
+		// 渲染訊息內容
+		$content = $param_helper->replace( (string) ( $node->params['content_tpl'] ?? '' ) );
+
+		// 透過 WordPress filter 委派 SMS 發送
+		$raw_result = \apply_filters(
+			'power_funnel/sms/send',
+			[
+				'success' => false,
+				'message' => 'SMS 發送失敗',
+			],
+			$recipient,
+			$content
+		);
+
+		$result  = \is_array( $raw_result ) ? $raw_result : [
+			'success' => false,
+			'message' => 'SMS 發送失敗',
+		];
+		$success = (bool) ( $result['success'] ?? false );
+		$message = (string) ( $result['message'] ?? '' );
+
+		return new WorkflowResultDTO(
+			[
+				'node_id' => $node->id,
+				'code'    => $success ? 200 : 500,
+				'message' => $message,
+			]
+		);
 	}
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace J7\PowerFunnel\Contracts\DTOs;
 
 use J7\PowerFunnel\Infrastructure\Repositories\WorkflowRule\Repository;
+use J7\PowerFunnel\Shared\Enums\EWorkflowStatus;
 use J7\WpUtils\Classes\DTO;
 
 /**
@@ -57,7 +58,7 @@ final class NodeDTO extends DTO {
 		try {
 			// 1. 檢查是否可以執行
 			if ( !$this->can_execute( $workflow_dto ) ) {
-				// 如果不符合執行條件就跳過，做下一個
+				// 如果不符合執行條件就跳過，透過 AS 排程下一個
 				$workflow_dto->add_result(
 				$index,
 				new WorkflowResultDTO(
@@ -70,7 +71,11 @@ final class NodeDTO extends DTO {
 				)
 					);
 
-				$workflow_dto->do_next();
+				\as_schedule_single_action(
+					\time(),
+					'power_funnel/workflow/' . EWorkflowStatus::RUNNING->value,
+					[ 'workflow_id' => $workflow_dto->id ]
+				);
 				return;
 			}
 
@@ -85,7 +90,7 @@ final class NodeDTO extends DTO {
 				throw new \RuntimeException($result->message);
 			}
 			// 記錄節點執行時間戳（Success path）
-			// 以建構子方式傳入，確保 DTO immutability 不被破壞，同時保留所有原始欄位
+			// 以建構子方式傳入，確保 DTO immutability 不被破壞，同時保留所有原始欄位（含 scheduled）
 			$result_with_ts = new WorkflowResultDTO(
 				[
 					'node_id'      => $result->node_id,
@@ -94,9 +99,19 @@ final class NodeDTO extends DTO {
 					'data'         => $result->data,
 					'next_node_id' => $result->next_node_id,
 					'executed_at'  => $this->get_current_timestamp(),
+					'scheduled'    => $result->scheduled,
 				]
 			);
 			$workflow_dto->add_result( $index, $result_with_ts );
+
+			// 若節點未自行排程（延遲節點會設 scheduled=true），由引擎統一排程下一節點
+			if ( !$result_with_ts->scheduled ) {
+				\as_schedule_single_action(
+					\time(),
+					'power_funnel/workflow/' . EWorkflowStatus::RUNNING->value,
+					[ 'workflow_id' => $workflow_dto->id ]
+				);
+			}
 		} catch (\Throwable $e) {
 			// 如果這個節點執行失敗，就拋出，中斷 workflow，並標註為失敗
 			$workflow_dto->add_result(

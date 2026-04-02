@@ -1,0 +1,79 @@
+// 實作 NodeDefinition execute() 方法 — Entity Relationship Model
+// 注意：此需求主要實作既有 NodeDefinition 的 execute() 方法，
+// 不新增獨立資料表。以下列出需要擴充的欄位與新增的 user_meta。
+
+// ========== 既有資料結構擴充 ==========
+
+// WorkflowResultDTO 擴充 scheduled 欄位
+// 儲存於 wp_postmeta 的 results 序列化陣列中
+// 原有欄位：node_id (string), code (int), message (string), data (mixed), next_node_id (string)
+// 新增欄位：scheduled (bool, 預設 false)
+//
+// Table workflow_results（邏輯結構，實際儲存於 wp_postmeta serialized array）{
+//   node_id       varchar  [not null, note: '執行的節點 ID']
+//   code          integer  [not null, note: '結果碼：200=成功, 301=跳過, 500=失敗']
+//   message       varchar  [note: '結果訊息']
+//   data          text     [note: '處理結果值']
+//   next_node_id  varchar  [note: '分支節點跳轉目標，null 表示線性執行下一個']
+//   executed_at   varchar  [note: 'ISO 8601 時間戳']
+//   scheduled     boolean  [not null, default: false, note: '節點是否已自行排程下一步（WaitNode/WaitUntilNode/TimeWindowNode 為 true）']
+// }
+
+// ========== 新增 User Meta ==========
+
+// pf_user_tags — 用戶標籤
+// 儲存於 wp_usermeta（若為 LINE 用戶則存於自訂儲存機制）
+// key: pf_user_tags
+// value: JSON array of string
+//
+// 範例：["vip", "premium", "early_bird"]
+//
+// 操作規則：
+// - TagUserNode action=add：合併新標籤，去重
+// - TagUserNode action=remove：移除指定標籤
+// - 新增標籤後觸發 TriggerPointService::fire_user_tagged()
+
+// ========== TagUserNode form_fields 變更 ==========
+
+// tags 欄位：type 從 select 改為 tags_input
+// 移除 options 屬性，改為純字串陣列自由輸入
+// 值格式：string[]（如 ["vip", "premium"]）
+
+// ========== Enum 定義 ==========
+
+Enum node_definition_execute_status {
+  implemented    [note: '已實作 execute()']
+  stub           [note: '枚舉存根，拋出 BadMethodCallException']
+
+  Note: '各 NodeDefinition 的 execute() 實作狀態'
+}
+
+// 本次實作後的節點狀態：
+// | NodeDefinition  | 狀態          |
+// |-----------------|--------------|
+// | EmailNode       | implemented  |（既有）
+// | WaitNode        | implemented  |（既有）
+// | YesNoBranchNode | implemented  |（既有）
+// | LineNode        | implemented  |（本次）
+// | SmsNode         | implemented  |（本次）
+// | WebhookNode     | implemented  |（本次）
+// | WaitUntilNode   | implemented  |（本次）
+// | TimeWindowNode  | implemented  |（本次）
+// | TagUserNode     | implemented  |（本次）
+// | SplitBranchNode | stub         |（保留存根）
+
+Enum tag_user_action {
+  add     [note: '新增標籤']
+  remove  [note: '移除標籤']
+
+  Note: 'TagUserNode 支援的標籤操作'
+}
+
+Enum webhook_method {
+  GET     [note: 'HTTP GET']
+  POST    [note: 'HTTP POST']
+  PUT     [note: 'HTTP PUT']
+  DELETE  [note: 'HTTP DELETE']
+
+  Note: 'WebhookNode 支援的 HTTP 方法'
+}

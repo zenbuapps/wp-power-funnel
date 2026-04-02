@@ -17,5 +17,5 @@ parameters:
 	bootstrapFiles:
 		- vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
 		- vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
-		- C:\Users\User\DEV\turborepo\powerrepo\apps\powerhouse/plugin.php
-		- C:\Users\User\DEV\turborepo\powerrepo\apps\powerhouse\vendor\autoload.php
+		- C:\Users\User\LocalSites\turbo\app\public\wp-content\plugins\powerhouse\plugin.php
+		- C:\Users\User\LocalSites\turbo\app\public\wp-content\plugins\powerhouse\vendor\autoload.php

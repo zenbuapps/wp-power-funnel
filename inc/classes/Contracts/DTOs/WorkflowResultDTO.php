@@ -28,6 +28,9 @@ final class WorkflowResultDTO extends DTO {
 	/** @var string 節點執行時間戳（ISO 8601 格式），預設空字串以向下相容舊資料 */
 	public string $executed_at = '';
 
+	/** @var bool 節點是否已自行排程下一步（WaitNode/WaitUntilNode/TimeWindowNode 為 true） */
+	public bool $scheduled = false;
+
 	/** 是否成功 */
 	public function is_success(): bool {
 		return $this->code === 200;
