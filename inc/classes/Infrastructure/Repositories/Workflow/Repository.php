@@ -15,9 +15,10 @@ final class Repository {
 	 *
 	 * @param WorkflowRuleDTO      $workflow_rule_dto    工作流程規則
 	 * @param array<string, mixed> $context_callable_set callable set array
+	 * @param int                  $trigger_user_id      觸發此工作流的 WordPress 用戶 ID，0 代表系統自動觸發
 	 * @return int workflow ID
 	 */
-	public static function create_failed_from_recursion_exceeded( WorkflowRuleDTO $workflow_rule_dto, array $context_callable_set = [] ): int {
+	public static function create_failed_from_recursion_exceeded( WorkflowRuleDTO $workflow_rule_dto, array $context_callable_set = [], int $trigger_user_id = 0 ): int {
 		$depth = \J7\PowerFunnel\Domains\Workflow\Services\RecursionGuard::depth();
 		\J7\PowerFunnel\Plugin::logger(
 			"遞迴Guard：工作流建立遞迴深度超過上限（{$depth}），拒絕建立工作流規則 {$workflow_rule_dto->id}",
@@ -33,6 +34,7 @@ final class Repository {
 			'post_name'   => 'workflow-failed-recursion-' . \time(),
 			'post_status' => EWorkflowStatus::FAILED->value,
 			'post_type'   => Register::post_type(),
+			'post_author' => $trigger_user_id,
 			'meta_input'  => [
 				'workflow_rule_id'     => $workflow_rule_dto->id,
 				'trigger_point'        => $workflow_rule_dto->trigger_point,
@@ -63,13 +65,15 @@ final class Repository {
 	 *
 	 * @param WorkflowRuleDTO      $workflow_rule_dto    工作流程規則
 	 * @param array<string, mixed> $context_callable_set callable set array
+	 * @param int                  $trigger_user_id      觸發此工作流的 WordPress 用戶 ID，0 代表系統自動觸發
 	 * @return int workflow ID
 	 */
-	public static function create_from( WorkflowRuleDTO $workflow_rule_dto, array $context_callable_set = [] ): int {
+	public static function create_from( WorkflowRuleDTO $workflow_rule_dto, array $context_callable_set = [], int $trigger_user_id = 0 ): int {
 		$args = [
 			'post_name'   => 'workflow-' . \time(),
 			'post_status' => EWorkflowStatus::RUNNING->value,
 			'post_type'   => Register::post_type(),
+			'post_author' => $trigger_user_id,
 			'meta_input'  => [
 				'workflow_rule_id'     => $workflow_rule_dto->id,
 				'trigger_point'        => $workflow_rule_dto->trigger_point,

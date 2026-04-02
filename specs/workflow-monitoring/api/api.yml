@@ -1,0 +1,359 @@
+openapi: 3.0.0
+info:
+  title: Power Funnel Workflow Monitoring API
+  version: 1.0.0
+  description: |
+    Workflow 執行監控相關的 REST API 端點。
+    命名空間為 power-funnel，response 封套格式為 {code, message, data}。
+
+paths:
+  /power-funnel/workflows:
+    get:
+      operationId: listWorkflows
+      summary: 查詢 Workflow 執行清單
+      description: |
+        列出所有 pf_workflow 實例，支援分頁、篩選（status/trigger_point/workflow_rule_id）、
+        關鍵字搜尋（模糊搜尋 results message）、排序。
+      parameters:
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+          description: 每頁筆數
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: 頁碼
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [running, completed, failed]
+          description: 篩選 Workflow 狀態
+        - name: trigger_point
+          in: query
+          schema:
+            type: string
+          description: 篩選觸發點 hook 名稱
+        - name: workflow_rule_id
+          in: query
+          schema:
+            type: integer
+          description: 篩選來源 WorkflowRule ID
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: 模糊搜尋 results message 中的關鍵字
+        - name: orderby
+          in: query
+          schema:
+            type: string
+            enum: [created_at, status, duration]
+            default: created_at
+          description: 排序欄位
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: 排序方向
+      responses:
+        '200':
+          description: 操作成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code, message, data]
+                properties:
+                  code:
+                    type: string
+                    example: operation_success
+                  message:
+                    type: string
+                    example: 操作成功
+                  data:
+                    type: object
+                    required: [items, pagination]
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/WorkflowListItem'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+        '400':
+          description: 參數錯誤
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 權限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /power-funnel/workflows/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Workflow ID（pf_workflow Post ID）
+    get:
+      operationId: getWorkflowDetail
+      summary: 查詢 Workflow 執行詳情
+      description: |
+        取得單一 Workflow 實例的完整執行資訊，包含節點清單、執行結果（含 executed_at）、
+        resolved context、人類可讀的 context_callable_set、計算出的耗時。
+      responses:
+        '200':
+          description: 操作成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code, message, data]
+                properties:
+                  code:
+                    type: string
+                    example: operation_success
+                  message:
+                    type: string
+                    example: 操作成功
+                  data:
+                    $ref: '#/components/schemas/WorkflowDetail'
+        '403':
+          description: 權限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Workflow 不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+components:
+  schemas:
+    WorkflowListItem:
+      type: object
+      required: [workflowId, workflowRuleId, workflowRuleTitle, triggerPoint, status, nodeProgress, userId, userDisplayName, createdAt]
+      properties:
+        workflowId:
+          type: integer
+          description: Workflow ID（pf_workflow Post ID）
+          example: 100
+        workflowRuleId:
+          type: integer
+          description: 來源 WorkflowRule ID
+          example: 10
+        workflowRuleTitle:
+          type: string
+          description: 來源 WorkflowRule 標題
+          example: 報名通知工作流
+        triggerPoint:
+          type: string
+          description: 觸發點 hook 名稱
+          example: pf/trigger/registration_approved
+        status:
+          type: string
+          description: Workflow 狀態
+          enum: [running, completed, failed]
+        nodeProgress:
+          type: string
+          description: 節點進度（已完成/總數）
+          example: 3/3
+        duration:
+          type: string
+          description: 耗時（從第一個 result 到最後一個的時間差，running 時為空字串）
+          nullable: true
+          example: 70s
+        userId:
+          type: integer
+          description: |
+            觸發用戶 ID（wp_posts.post_author）。
+            記錄觸發 workflow 的終端用戶（非操作管理員）。
+            0 表示訪客或系統觸發（如 Action Scheduler）。
+            由 Repository::create_from() 的 $trigger_user_id 參數設定，
+            caller（TriggerPointService）從觸發事件的參數中取得用戶 ID 傳入。
+          example: 5
+        userDisplayName:
+          type: string
+          description: |
+            觸發用戶顯示名稱。
+            userId > 0 且用戶存在時回傳 WP_User::display_name。
+            userId = 0（訪客/系統觸發）或用戶已被刪除時回傳「訪客」。
+          example: Alice
+        createdAt:
+          type: string
+          format: date-time
+          description: Workflow 建立時間
+          example: '2026-04-01T09:00:00Z'
+
+    WorkflowDetail:
+      type: object
+      required: [workflowId, workflowRuleId, workflowRuleTitle, triggerPoint, status, nodes, context, contextCallableSet, createdAt]
+      properties:
+        workflowId:
+          type: integer
+          example: 100
+        workflowRuleId:
+          type: integer
+          example: 10
+        workflowRuleTitle:
+          type: string
+          example: 報名通知工作流
+        triggerPoint:
+          type: string
+          example: pf/trigger/registration_approved
+        status:
+          type: string
+          enum: [running, completed, failed]
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowNodeWithResult'
+        context:
+          type: object
+          description: Resolved context（key-value pairs）
+          additionalProperties:
+            type: string
+          example:
+            user_email: alice@example.com
+            user_name: Alice
+            activity_title: React 進階工作坊
+        contextCallableSet:
+          type: object
+          description: 人類可讀的 context_callable_set
+          properties:
+            callable:
+              type: string
+              description: 精簡的 callable 名稱（ClassName::method）
+              example: TriggerPointService::resolve_registration_context
+            params:
+              type: array
+              description: callable 參數
+              items:
+                oneOf:
+                  - type: string
+                  - type: integer
+              example: [123]
+        startedAt:
+          type: string
+          format: date-time
+          description: 第一個 result 的 executed_at（若無 result 則為 null）
+          nullable: true
+          example: '2026-04-01T09:00:05Z'
+        completedAt:
+          type: string
+          format: date-time
+          description: 最後一個 result 的 executed_at（若未完成則為 null）
+          nullable: true
+          example: '2026-04-01T09:01:10Z'
+        duration:
+          type: string
+          description: 耗時
+          nullable: true
+          example: 65s
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-04-01T09:00:00Z'
+
+    WorkflowNodeWithResult:
+      type: object
+      required: [nodeId, nodeDefinitionId, params]
+      properties:
+        nodeId:
+          type: string
+          description: 節點 ID
+          example: n1
+        nodeDefinitionId:
+          type: string
+          description: 節點定義 ID
+          example: email
+        params:
+          type: object
+          description: 節點參數
+          additionalProperties: true
+          example:
+            recipient: context
+            subject: 歡迎
+        matchCallback:
+          type: array
+          description: 執行前條件檢查 callable
+          items:
+            type: string
+        matchCallbackParams:
+          type: object
+          description: match_callback 參數
+          additionalProperties: true
+        result:
+          $ref: '#/components/schemas/NodeResult'
+
+    NodeResult:
+      type: object
+      description: 節點執行結果（若節點尚未執行則為 null）
+      nullable: true
+      properties:
+        code:
+          type: integer
+          description: 結果碼（200=成功, 301=跳過, 500=失敗）
+          enum: [200, 301, 500]
+        message:
+          type: string
+          description: 結果描述
+          example: 發信成功
+        data:
+          description: 額外資料
+          nullable: true
+        executedAt:
+          type: string
+          format: date-time
+          description: 執行時間
+          example: '2026-04-01T09:00:05Z'
+
+    Pagination:
+      type: object
+      required: [total, totalPages, currentPage, perPage]
+      properties:
+        total:
+          type: integer
+          description: 總筆數
+          example: 3
+        totalPages:
+          type: integer
+          description: 總頁數
+          example: 1
+        currentPage:
+          type: integer
+          description: 當前頁碼
+          example: 1
+        perPage:
+          type: integer
+          description: 每頁筆數
+          example: 10
+
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: operation_failed
+        message:
+          type: string
+          example: 操作失敗

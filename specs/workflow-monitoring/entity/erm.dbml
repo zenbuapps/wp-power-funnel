@@ -1,0 +1,61 @@
+// Power Funnel Workflow Monitoring - Entity Relationship Model
+// 本功能不新增 DB 表，而是擴充現有的 workflow_result_dtos 結構並新增 REST API 讀取層
+// 底層儲存基於 WordPress CPT（Custom Post Type）+ Post Meta
+
+// ========== 擴充：WorkflowResultDTO（新增 executed_at 欄位）==========
+
+Table workflow_result_dtos {
+  node_id      varchar    [not null, note: '對應 NodeDTO.id']
+  code         integer    [not null, note: '200=成功, 301=跳過, 500=失敗']
+  message      varchar    [note: '結果描述']
+  data         text       [note: 'JSON，額外資料']
+  executed_at  timestamp  [not null, note: '新增欄位：節點執行完成的 ISO 8601 時間戳']
+
+  Note: '執行結果（嵌入於 workflows.results meta 中，非獨立 DB 表）。每個節點執行後記錄一筆。executed_at 為本次新增欄位。'
+}
+
+Enum result_code {
+  200  [note: '成功']
+  301  [note: '跳過（match_callback 不符）']
+  500  [note: '失敗']
+}
+
+// ========== 參考：現有 Workflow 表（修改 post_author 用途）==========
+
+Table workflows {
+  id                   integer    [pk, note: 'WP Post ID']
+  title                varchar    [note: 'post_title，自動生成']
+  post_author          integer    [not null, note: 'wp_posts.post_author：觸發用戶 ID。記錄終端用戶（非操作管理員）。0=訪客或系統觸發。由 Repository::create_from($trigger_user_id) 設定。']
+  status               varchar    [not null, note: 'post_status: running | completed | failed']
+  created_at           timestamp  [not null, note: 'post_date']
+  updated_at           timestamp  [not null, note: 'post_modified']
+
+  // -- Post Meta fields --
+  workflow_rule_id     integer    [not null, note: 'meta: 來源 WorkflowRule 的 Post ID']
+  trigger_point        varchar    [not null, note: 'meta: 從 WorkflowRule 複製的觸發點 hook']
+  nodes                text       [not null, note: 'meta: 從 WorkflowRule 複製的 NodeDTO[] JSON']
+  context_callable_set text       [note: 'meta: PHP 序列化的 callable set，API 回傳時轉為人類可讀格式']
+  results              text       [note: 'meta: WorkflowResultDTO[] JSON，含新增的 executed_at 欄位']
+
+  Note: '工作流執行實例（CPT: pf_workflow）。post_author 記錄觸發的終端用戶 ID（本次變更），API 讀取時查詢 WP_User 取得 display_name，用戶不存在或 post_author=0 時顯示「訪客」。'
+}
+
+Enum workflow_status {
+  running    [note: '進行中，逐節點執行']
+  completed  [note: '所有節點已完成']
+  failed     [note: '某節點執行失敗或遞迴深度超限']
+}
+
+// ========== 參考：WorkflowRule 表（不修改，清單 API 需 JOIN 取 title）==========
+
+Table workflow_rules {
+  id           integer    [pk, note: 'WP Post ID']
+  title        varchar    [not null, note: 'post_title']
+  status       varchar    [not null, note: 'post_status: publish | draft | trash']
+
+  Note: '工作流規則模板（CPT: pf_workflow_rule）。清單 API 需透過 workflow_rule_id JOIN 此表取得 title。'
+}
+
+// ========== Relationships ==========
+
+Ref: workflows.workflow_rule_id > workflow_rules.id  // many-to-one: 多個 Workflow 對應一個 WorkflowRule

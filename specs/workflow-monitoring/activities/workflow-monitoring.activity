@@ -1,0 +1,37 @@
+[ACTIVITY] Workflow 執行監控與除錯
+[ACTOR] Admin -> {specs/actors/admin.md}
+[ACTOR] System -> {specs/actors/system.md}
+
+# Phase 1: 後端資料增強 — WorkflowResultDTO 時間戳
+
+[STEP:1] @System {features/workflow/record-node-executed-at.feature}
+  WorkflowResultDTO 新增 executed_at 欄位，NodeDTO::try_execute() 完成後自動記錄 ISO 8601 時間戳
+
+# Phase 1: 後端 REST API
+
+[STEP:2] @Admin {features/workflow-api/query-workflow-list.feature}
+  管理員查詢 Workflow 執行清單，支援分頁（per_page/page）、篩選（status/trigger_point/workflow_rule_id）、關鍵字搜尋（模糊搜尋 results message）、排序（orderby/order）。清單包含 workflowId、觸發用戶（userId/userDisplayName，post_author=0 或用戶已刪除時顯示「訪客」）
+
+[STEP:3] @Admin {features/workflow-api/query-workflow-detail.feature}
+  管理員查詢單一 Workflow 執行詳情，包含 nodes、results（含 executed_at）、resolved context、人類可讀的 context_callable_set、觸發點資訊
+
+# Phase 2: 前端清單頁
+
+[STEP:4] @Admin {specs/ui/workflow-list-page.md}
+  管理員在前端瀏覽 Workflow 執行清單表格，使用篩選條件縮小範圍，或用關鍵字搜尋錯誤訊息
+
+# Phase 2: 前端詳情頁
+
+[STEP:5] @Admin {specs/ui/workflow-detail-page.md}
+  管理員點擊清單中的某筆 Workflow，進入詳情頁查看完整執行資訊
+
+[STEP:6] @Admin {specs/ui/workflow-detail-page.md}
+  管理員在詳情頁查看 ReactFlow 唯讀流程圖，每個節點以顏色邊框和小徽章顯示執行狀態
+
+[STEP:7] @Admin {specs/ui/workflow-detail-page.md}
+  管理員點擊流程圖中的節點，展開 Drawer 查看該節點的完整 WorkflowResultDTO（code/message/data/executed_at）
+
+# Phase 3: 簡化版觸發資訊面板
+
+[STEP:8] @Admin {specs/ui/workflow-detail-page.md}
+  管理員在詳情頁底部查看簡化版觸發資訊面板：觸發點名稱、來源 WorkflowRule 連結、context_callable_set（人類可讀格式）、resolved context（key-value）
