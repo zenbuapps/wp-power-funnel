@@ -1,0 +1,103 @@
+// WooCommerce 觸發點擴充 — Entity Relationship Model
+// 注意：此需求不新增獨立資料表，僅擴充既有的 ETriggerPoint enum 與 context keys 映射。
+
+// ========== Enum 擴充 ==========
+
+Enum trigger_point {
+  // === 既有 (略) ===
+  // registration_created, registration_approved, registration_rejected,
+  // registration_cancelled, registration_failed,
+  // line_followed, line_unfollowed, line_message_received, line_postback_received,
+  // line_join, line_leave, line_member_joined, line_member_left,
+  // workflow_completed, workflow_failed,
+  // activity_started, activity_before_start, activity_ended,
+  // user_tagged, promo_link_clicked,
+  // order_completed
+
+  // === P4: WooCommerce 訂單狀態（新增 6 個） ===
+  order_pending      [note: '訂單待付款']
+  order_processing   [note: '訂單處理中']
+  order_on_hold      [note: '訂單保留中']
+  order_cancelled    [note: '訂單已取消']
+  order_refunded     [note: '訂單已退款']
+  order_failed       [note: '訂單失敗']
+
+  // === P5: 顧客行為（新增 1 個） ===
+  customer_registered  [note: '新顧客註冊']
+
+  // === P5: 訂閱生命週期（新增 7 個，正式實作） ===
+  subscription_initial_payment  [note: '訂閱首次付款完成']
+  subscription_failed           [note: '訂閱失敗']
+  subscription_success          [note: '訂閱成功']
+  subscription_renewal_order    [note: '訂閱續訂訂單建立']
+  subscription_end              [note: '訂閱結束']
+  subscription_trial_end        [note: '訂閱試用期結束']
+  subscription_prepaid_end      [note: '訂閱預付期結束']
+
+  Note: '觸發時機點 enum，對應 ETriggerPoint PHP enum。此次新增 14 個 case。'
+}
+
+// ========== 群組擴充 ==========
+
+Enum trigger_point_group {
+  // === 既有 ===
+  registration      [note: '報名狀態']
+  line_interaction   [note: 'LINE 互動']
+  line_group         [note: 'LINE 群組']
+  workflow           [note: '工作流引擎']
+  activity           [note: '活動時間']
+  user_behavior      [note: '用戶行為']
+  woocommerce        [note: 'WooCommerce（含既有 order_completed + 新增 6 個訂單狀態）']
+
+  // === 新增 ===
+  customer           [note: '顧客行為（新增）']
+  subscription       [note: '訂閱（新增，正式實作）']
+
+  Note: '觸發點群組 key，用於前端 OptGroup 分類'
+}
+
+// ========== Context Keys 結構 ==========
+
+// order_keys（擴充 order_status，從 9 個 -> 10 個）
+// 適用：ORDER_COMPLETED, ORDER_PENDING, ORDER_PROCESSING, ORDER_ON_HOLD,
+//       ORDER_CANCELLED, ORDER_REFUNDED, ORDER_FAILED
+//
+// Table order_context_keys（邏輯結構）{
+//   order_id            varchar  [not null, note: '訂單 ID']
+//   order_total         varchar  [not null, note: '訂單金額']
+//   billing_email       varchar  [not null, note: '帳單 Email']
+//   customer_id         varchar  [not null, note: '客戶 ID']
+//   line_items_summary  varchar  [not null, note: '商品清單摘要']
+//   shipping_address    varchar  [not null, note: '配送地址']
+//   payment_method      varchar  [not null, note: '付款方式']
+//   order_date          varchar  [not null, note: '訂單日期']
+//   billing_phone       varchar  [not null, note: '帳單電話']
+//   order_status        varchar  [not null, note: '訂單狀態（新增）']
+// }
+
+// customer_keys（新增）
+// 適用：CUSTOMER_REGISTERED
+//
+// Table customer_context_keys（邏輯結構）{
+//   customer_id          varchar  [not null, note: '客戶 ID']
+//   billing_email        varchar  [not null, note: '帳單 Email']
+//   billing_first_name   varchar  [not null, note: '帳單名字']
+//   billing_last_name    varchar  [not null, note: '帳單姓氏']
+//   billing_phone        varchar  [not null, note: '帳單電話']
+// }
+
+// subscription_keys（新增）
+// 適用：SUBSCRIPTION_INITIAL_PAYMENT, SUBSCRIPTION_FAILED, SUBSCRIPTION_SUCCESS,
+//       SUBSCRIPTION_RENEWAL_ORDER, SUBSCRIPTION_END, SUBSCRIPTION_TRIAL_END,
+//       SUBSCRIPTION_PREPAID_END
+//
+// Table subscription_context_keys（邏輯結構）{
+//   subscription_id      varchar  [not null, note: '訂閱 ID']
+//   subscription_status  varchar  [not null, note: '訂閱狀態']
+//   customer_id          varchar  [not null, note: '客戶 ID']
+//   billing_email        varchar  [not null, note: '帳單 Email']
+//   billing_first_name   varchar  [not null, note: '帳單名字']
+//   billing_last_name    varchar  [not null, note: '帳單姓氏']
+//   order_total          varchar  [not null, note: '訂單金額']
+//   payment_method       varchar  [not null, note: '付款方式']
+// }

@@ -77,7 +77,6 @@ Feature: 配置 WorkflowRule 的 React Flow 節點
         | wait_until     | Wait Until    |
         | time_window    | Time Window   |
         | yes_no_branch  | Yes/No Branch |
-        | split_branch   | Split Branch  |
         | tag_user       | Tag User      |
 
   Rule: 後置（狀態）- 刪除節點後應從畫布移除且相鄰節點自動重新連線

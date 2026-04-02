@@ -1,0 +1,121 @@
+openapi: 3.0.0
+info:
+  title: Power Funnel - WooCommerce 觸發點擴充
+  version: 1.0.0
+  description: |
+    擴充既有的 Context Keys API，新增 14 個觸發點的 context keys 映射：
+    - 6 個訂單狀態觸發點（共用 order_keys，含新增 order_status）
+    - 1 個顧客行為觸發點（customer_keys）
+    - 7 個訂閱生命週期觸發點（共用 subscription_keys）
+
+    既有 ORDER_COMPLETED 的 order_keys 也同步擴充 order_status 欄位。
+    不新增 API 端點，僅擴充既有 context_keys_map 映射。
+
+paths:
+  /trigger-points/{triggerPoint}/context-keys:
+    get:
+      operationId: getTriggerPointContextKeys
+      summary: 查詢觸發點可用 Context Keys（既有端點，擴充映射）
+      description: |
+        回傳指定觸發點的可用 context keys 列表。
+        此需求不新增端點，僅擴充 TriggerPointService::get_context_keys_map() 中的映射資料。
+
+        新增的映射：
+        - ORDER_PENDING / PROCESSING / ON_HOLD / CANCELLED / REFUNDED / FAILED => order_keys（10 個，含 order_status）
+        - ORDER_COMPLETED => order_keys（從 9 個升級到 10 個，新增 order_status）
+        - CUSTOMER_REGISTERED => customer_keys（5 個）
+        - SUBSCRIPTION_INITIAL_PAYMENT / FAILED / SUCCESS / RENEWAL_ORDER / END / TRIAL_END / PREPAID_END => subscription_keys（8 個）
+      parameters:
+        - name: triggerPoint
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - pf/trigger/order_pending
+              - pf/trigger/order_processing
+              - pf/trigger/order_on_hold
+              - pf/trigger/order_cancelled
+              - pf/trigger/order_refunded
+              - pf/trigger/order_failed
+              - pf/trigger/order_completed
+              - pf/trigger/customer_registered
+              - pf/trigger/subscription_initial_payment
+              - pf/trigger/subscription_failed
+              - pf/trigger/subscription_success
+              - pf/trigger/subscription_renewal_order
+              - pf/trigger/subscription_end
+              - pf/trigger/subscription_trial_end
+              - pf/trigger/subscription_prepaid_end
+          description: 觸發點 hook value
+      responses:
+        '200':
+          description: 成功回傳 context keys 列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ContextKeyItem'
+              examples:
+                orderKeys:
+                  summary: 訂單觸發點（10 個 keys）
+                  value:
+                    - { key: order_id, label: "訂單 ID" }
+                    - { key: order_total, label: "訂單金額" }
+                    - { key: billing_email, label: "帳單 Email" }
+                    - { key: customer_id, label: "客戶 ID" }
+                    - { key: line_items_summary, label: "商品清單摘要" }
+                    - { key: shipping_address, label: "配送地址" }
+                    - { key: payment_method, label: "付款方式" }
+                    - { key: order_date, label: "訂單日期" }
+                    - { key: billing_phone, label: "帳單電話" }
+                    - { key: order_status, label: "訂單狀態" }
+                customerKeys:
+                  summary: 顧客觸發點（5 個 keys）
+                  value:
+                    - { key: customer_id, label: "客戶 ID" }
+                    - { key: billing_email, label: "帳單 Email" }
+                    - { key: billing_first_name, label: "帳單名字" }
+                    - { key: billing_last_name, label: "帳單姓氏" }
+                    - { key: billing_phone, label: "帳單電話" }
+                subscriptionKeys:
+                  summary: 訂閱觸發點（8 個 keys）
+                  value:
+                    - { key: subscription_id, label: "訂閱 ID" }
+                    - { key: subscription_status, label: "訂閱狀態" }
+                    - { key: customer_id, label: "客戶 ID" }
+                    - { key: billing_email, label: "帳單 Email" }
+                    - { key: billing_first_name, label: "帳單名字" }
+                    - { key: billing_last_name, label: "帳單姓氏" }
+                    - { key: order_total, label: "訂單金額" }
+                    - { key: payment_method, label: "付款方式" }
+        '400':
+          description: 必要參數未提供
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    ContextKeyItem:
+      type: object
+      required: [key, label]
+      properties:
+        key:
+          type: string
+          example: order_id
+          description: context key 名稱，對應 workflow context 中的 key
+        label:
+          type: string
+          example: 訂單 ID
+          description: 前端顯示用的中文標籤
+
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: 必要參數未提供

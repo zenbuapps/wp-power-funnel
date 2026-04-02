@@ -1,0 +1,41 @@
+[ACTIVITY] WooCommerce 觸發點擴充（訂單狀態 + 顧客註冊 + 訂閱生命週期）
+[ACTOR] System -> {specs/actors/system.md}
+[PRINCIPLE] Serializable Context Callable -> {../workflow-engine/specs/design-principles.md}
+
+# Part A: P4 WooCommerce 訂單狀態觸發點（6 個新增）
+
+[STEP:1] @System {features/trigger-point/register-order-status-triggers.feature}
+  ETriggerPoint enum 新增 6 個訂單狀態 case：ORDER_PENDING、ORDER_PROCESSING、ORDER_ON_HOLD、ORDER_CANCELLED、ORDER_REFUNDED、ORDER_FAILED。所有 case 的 group() 回傳 woocommerce，group_label() 回傳 WooCommerce，is_stub() 回傳 false。
+
+[STEP:2] @System {features/trigger-point/fire-order-status-triggers.feature}
+  TriggerPointService 在 WooCommerce 啟用時監聽 6 個 woocommerce_order_status_{status} hook。狀態變更時使用 build_order_context_callable_set() 建立 context_callable_set 並觸發對應 pf/trigger/order_{status} hook。
+
+[STEP:3] @System {features/trigger-point/resolve-order-context-v2.feature}
+  resolve_order_context() 新增第 10 個 key：order_status，回傳訂單當前狀態字串。既有 9 個 key 不變。所有訂單觸發點（含既有 ORDER_COMPLETED）共用此方法。
+
+# Part B: P5 顧客行為觸發點
+
+[STEP:4] @System {features/trigger-point/register-customer-registered-trigger.feature}
+  ETriggerPoint enum 新增 CUSTOMER_REGISTERED case。group() 回傳 customer，group_label() 回傳 顧客行為，is_stub() 回傳 false。
+
+[STEP:5] @System {features/trigger-point/fire-customer-registered.feature}
+  TriggerPointService 監聯 WordPress user_register hook。新用戶註冊時建立 context_callable_set（callable = resolve_customer_context，params = [user_id]），觸發 pf/trigger/customer_registered hook。
+
+[STEP:6] @System {features/trigger-point/resolve-customer-context.feature}
+  新增 resolve_customer_context() 靜態方法。以 user_id 為參數，回傳 5 個 context keys：customer_id、billing_email、billing_first_name、billing_last_name、billing_phone。用戶不存在時回傳空陣列。
+
+# Part C: P5 訂閱生命週期觸發點（7 個正式實作）
+
+[STEP:7] @System {features/trigger-point/register-subscription-triggers.feature}
+  ETriggerPoint enum 新增 7 個訂閱 case。group() 回傳 subscription，group_label() 回傳 訂閱，is_stub() 回傳 false。軟依賴 powerhouse 外掛。
+
+[STEP:8] @System {features/trigger-point/fire-subscription-triggers.feature}
+  TriggerPointService 在 powerhouse 外掛啟用時監聽 7 個 powerhouse_subscription_at_{action} hook。事件發生時建立 context_callable_set（callable = resolve_subscription_context，params = [subscription_id]），觸發對應 pf/trigger/subscription_{name} hook。
+
+[STEP:9] @System {features/trigger-point/resolve-subscription-context.feature}
+  新增 resolve_subscription_context() 靜態方法。以 subscription_id 為參數，回傳 8 個 context keys：subscription_id、subscription_status、customer_id、billing_email、billing_first_name、billing_last_name、order_total、payment_method。訂閱不存在時回傳空陣列。
+
+# Part D: Context Keys API 擴充
+
+[STEP:10] @System {features/trigger-point/query-context-keys-expanded.feature}
+  context_keys_map 擴充所有新增觸發點的 context keys 映射。6 個訂單觸發點共用 order_keys（含新增的 order_status），CUSTOMER_REGISTERED 使用 customer_keys，7 個訂閱觸發點共用 subscription_keys。

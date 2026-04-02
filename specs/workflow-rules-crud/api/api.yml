@@ -311,7 +311,6 @@ components:
         - wait_until
         - time_window
         - yes_no_branch
-        - split_branch
         - tag_user
       description: |
         節點模組（對應 ENode）
@@ -323,7 +322,6 @@ components:
         - wait_until: 等待至
         - time_window: 等待至時間窗口
         - yes_no_branch: 是/否分支
-        - split_branch: 分支
         - tag_user: 標籤用戶
 
     NodeType:
@@ -332,7 +330,7 @@ components:
       description: |
         節點類型分類（對應 ENodeType）
         - send_message: 傳送訊息類（email, sms, line, webhook）
-        - action: 動作類（wait, wait_until, time_window, yes_no_branch, split_branch, tag_user）
+        - action: 動作類（wait, wait_until, time_window, yes_no_branch, tag_user）
 
     # ----- Value Objects -----
 

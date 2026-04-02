@@ -9,6 +9,8 @@ parameters:
 		- '#Function .* not found#'
 		- '#Cannot cast mixed to .*#'
 		- '#Using nullsafe method call on non-nullable type .*#'
+		- '#Class WC_Subscription not found#'
+		- '#Call to method .* on an unknown class WC_Subscription#'
 	reportUnmatchedIgnoredErrors: false
 	excludePaths:
 		- js/*

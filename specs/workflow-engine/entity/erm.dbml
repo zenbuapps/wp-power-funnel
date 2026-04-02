@@ -93,7 +93,7 @@ Table node_definitions {
 
 Enum node_type {
   send_message  [note: '發送訊息類：Email, SMS, LINE, Webhook']
-  action        [note: '動作類：Wait, WaitUntil, TimeWindow, YesNoBranch, SplitBranch, TagUser']
+  action        [note: '動作類：Wait, WaitUntil, TimeWindow, YesNoBranch, TagUser']
 }
 
 // ========== TriggerPoint（運行時記憶體，由 ETriggerPoint enum 定義）==========

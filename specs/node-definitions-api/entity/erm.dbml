@@ -5,7 +5,7 @@
 
 Enum node_type {
   send_message  [note: '發送訊息類節點（email/sms/line/webhook）']
-  action        [note: '動作類節點（wait/wait_until/time_window/yes_no_branch/split_branch/tag_user）']
+  action        [note: '動作類節點（wait/wait_until/time_window/yes_no_branch/tag_user）']
 }
 
 Enum form_field_type {

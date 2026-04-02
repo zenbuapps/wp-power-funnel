@@ -20,18 +20,21 @@
 
 # Part C: 時間控制節點
 
-[STEP:5] @System {features/nodes/wait-until-node-execute.feature}
+[STEP:5] @System {features/nodes/wait-node-execute.feature}
+  WaitNode.execute() 修正：移除錯誤的 ParamHelper.try_get_param('timestamp') 呼叫，改為直接從 $node->params 取得 duration（string → int 轉型）與 unit（minutes/hours/days），計算 Unix timestamp = time() + duration * unit_multiplier。支援的 unit_multiplier：minutes=60、hours=3600、days=86400。成功回傳 code 200 + scheduled=true + 人類可讀 message（如「等待 30 分鐘」）。缺少 duration/unit、duration 非正數、unit 非法值、排程失敗均回傳 code 500 + 對應錯誤訊息。
+
+[STEP:6] @System {features/nodes/wait-until-node-execute.feature}
   WaitUntilNode.execute() 實作：從 params 取得 datetime，解析為 Unix timestamp。若 timestamp 早於當前時間，使用 time() 立即排程。呼叫 as_schedule_single_action($timestamp, 'power_funnel/workflow/running', ['workflow_id' => $id])，回傳 WorkflowResultDTO(scheduled: true)。排程失敗回傳 code 500。
 
-[STEP:6] @System {features/nodes/time-window-node-execute.feature}
+[STEP:7] @System {features/nodes/time-window-node-execute.feature}
   TimeWindowNode.execute() 實作：從 params 取得 start_time、end_time、timezone（預設 wp_timezone_string()）。計算下一個時間窗口開始時刻的 Unix timestamp。若當前時間已在窗口內，使用 time() 立即排程。若不在窗口內，排程至下一個 start_time。支援跨日窗口（start_time > end_time，如 22:00~06:00）。呼叫 as_schedule_single_action，回傳 WorkflowResultDTO(scheduled: true)。
 
 # Part D: 用戶操作節點
 
-[STEP:7] @System {features/nodes/tag-user-node-execute.feature}
+[STEP:8] @System {features/nodes/tag-user-node-execute.feature}
   TagUserNode.execute() 實作：從 params 取得 tags（string[]）與 action（add/remove）。從 workflow.context 取得 user_id（取 line_user_id 或對應的 WP user）。讀取 user_meta 'pf_user_tags'（JSON array of string），依 action 執行新增或移除操作後寫回。action=add 時對每個新增的 tag 呼叫 TriggerPointService::fire_user_tagged()。tags 欄位型別改為 tags_input。
 
 # Part E: TagUserNode 表單欄位更新
 
-[STEP:8] @System {features/nodes/tag-user-form-fields.feature}
+[STEP:9] @System {features/nodes/tag-user-form-fields.feature}
   TagUserNode 的 tags 欄位 type 從 select 改為 tags_input，移除 options（改為用戶自由輸入純字串標籤）。前端需對應 tags_input 元件。

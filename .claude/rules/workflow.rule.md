@@ -114,7 +114,6 @@ paths:
    - `WaitUntilNode`：等待至指定時間
    - `TimeWindowNode`：時間窗口條件判斷
    - `YesNoBranchNode`：是否分支
-   - `SplitBranchNode`：多路分支
    - `TagUserNode`：貼標籤，執行後呼叫 `TriggerPointService::fire_user_tagged()`
 
 ## 新增觸發點

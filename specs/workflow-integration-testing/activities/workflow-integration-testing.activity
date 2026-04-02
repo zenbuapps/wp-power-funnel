@@ -1,0 +1,43 @@
+[ACTIVITY] 工作流引擎整合測試補強
+[ACTOR] System -> {specs/actors/system.md}
+
+# Part A: Action Scheduler 統一排程測試補完
+
+[STEP:1] @System {features/engine/action-scheduler-chaining-impl.feature}
+  補完 ActionSchedulerChainingTest 中全部 markTestIncomplete 的測試。
+  驗證 NodeDTO::try_execute() 在三種路徑下的 AS 排程行為：
+  (1) 非延遲節點成功 → 引擎排程立即執行下一節點
+  (2) 延遲節點成功（scheduled=true）→ 引擎不二次排程
+  (3) 節點失敗 → 不排程
+  (4) 最後一個節點成功 → 排程後 workflow 進入 completed
+  (5) WorkflowResultDTO.scheduled 欄位預設值驗證
+  (6) YesNoBranchNode 帶 next_node_id 時引擎仍排程
+
+# Part B: Context 跨節點傳遞測試
+
+[STEP:2] @System {features/workflow/context-passing.feature}
+  驗證 context_callable_set 解析後的 context key 能在節點 params 中被 ParamHelper 替換。
+  具體驗證：
+  (1) TestCallable::$test_context 設定 customer_email → EmailNode params 中 {{customer_email}} 被替換
+  (2) wp_mail filter 攔截後驗證收件人為 context 中的 email 值
+  (3) 多個 context key 在同一模板中同時替換
+
+# Part C: 全鏈路 E2E 測試
+
+[STEP:3] @System {features/workflow/end-to-end-order-completed.feature}
+  以 ORDER_COMPLETED 觸發建立包含 TagUserNode + EmailNode + WaitNode + WebhookNode 的 workflow。
+  驗證整條鏈路走通：
+  (1) do_action('pf/trigger/order_completed', $context_callable_set) 觸發
+  (2) Workflow 建立為 running 狀態
+  (3) 前兩個節點（TagUserNode + EmailNode）依序執行
+  (4) WaitNode 執行後 workflow 暫停（scheduled=true）
+  (5) 手動 do_action('power_funnel/workflow/running', ...) 模擬 AS 到期
+  (6) WebhookNode 執行完成
+  (7) Workflow 最終 status = completed，results 共 4 筆
+
+[STEP:4] @System {features/workflow/branch-end-to-end.feature}
+  YesNoBranchNode 分支路徑全鏈路測試。
+  (1) context 帶 order_total = 1500，分支條件 order_total > 1000
+  (2) yes 路徑的 VIP 節點被執行
+  (3) no 路徑的節點不出現在 results 中
+  (4) workflow 最終 completed

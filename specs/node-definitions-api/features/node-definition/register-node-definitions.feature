@@ -20,7 +20,6 @@ Feature: 註冊 NodeDefinition
         | wait_until     | 等待至            | action        |
         | time_window    | 等待至時間窗口    | action        |
         | yes_no_branch  | 是/否分支         | action        |
-        | split_branch   | 分支              | action        |
         | tag_user       | 標籤用戶          | action        |
 
   Rule: 後置（狀態）- 每個 NodeDefinition 應包含 form_fields schema
@@ -100,14 +99,6 @@ Feature: 註冊 NodeDefinition
         | condition_field | 條件欄位 | text   | true     |
         | operator        | 運算子   | select | true     |
         | condition_value | 條件值   | text   | true     |
-
-    Example: split_branch 節點的 form_fields 包含分支條件
-      Given 系統已載入 Power Funnel 外掛
-      When 系統執行 apply_filters('power_funnel/workflow_rule/node_definitions', [])
-      Then 操作成功
-      And "split_branch" 節點的 form_fields 應包含：
-        | name     | label    | type | required |
-        | branches | 分支條件 | json | true     |
 
     Example: tag_user 節點的 form_fields 包含標籤、動作
       Given 系統已載入 Power Funnel 外掛

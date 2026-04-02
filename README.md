@@ -133,7 +133,6 @@ WorkflowDTO::try_execute() 逐節點執行
 | 等待至指定時間 | `wait_until` | ACTION | 🚧 Stub |
 | 等待至時間窗口 | `time_window` | ACTION | 🚧 Stub |
 | 是/否分支 | `yes_no_branch` | ACTION | 🚧 Stub |
-| 多路分支 | `split_branch` | ACTION | 🚧 Stub |
 | 標籤用戶 | `tag_user` | ACTION | 🚧 Stub |
 
 ### 擴充節點（後端 PHP）

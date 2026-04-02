@@ -137,6 +137,21 @@ $context_callable_set = [
 | P3 活動時間 | `ACTIVITY_ENDED` | `pf/trigger/activity_ended` | 枚舉存根，目前無實作 |
 | P3 用戶行為 | `USER_TAGGED` | `pf/trigger/user_tagged` | 用戶被貼標籤（由 TagUserNode 呼叫） |
 | P3 用戶行為 | `PROMO_LINK_CLICKED` | `pf/trigger/promo_link_clicked` | 枚舉存根，目前無實作 |
+| P4 WooCommerce 訂單 | `ORDER_COMPLETED` | `pf/trigger/order_completed` | 訂單完成（`woocommerce_order_status_completed`） |
+| P4 WooCommerce 訂單 | `ORDER_PENDING` | `pf/trigger/order_pending` | 訂單待付款（`woocommerce_order_status_pending`） |
+| P4 WooCommerce 訂單 | `ORDER_PROCESSING` | `pf/trigger/order_processing` | 訂單處理中（`woocommerce_order_status_processing`） |
+| P4 WooCommerce 訂單 | `ORDER_ON_HOLD` | `pf/trigger/order_on_hold` | 訂單保留中（`woocommerce_order_status_on-hold`） |
+| P4 WooCommerce 訂單 | `ORDER_CANCELLED` | `pf/trigger/order_cancelled` | 訂單已取消（`woocommerce_order_status_cancelled`） |
+| P4 WooCommerce 訂單 | `ORDER_REFUNDED` | `pf/trigger/order_refunded` | 訂單已退款（全額，`woocommerce_order_status_refunded`） |
+| P4 WooCommerce 訂單 | `ORDER_FAILED` | `pf/trigger/order_failed` | 訂單失敗（`woocommerce_order_status_failed`） |
+| P5 顧客行為 | `CUSTOMER_REGISTERED` | `pf/trigger/customer_registered` | 新顧客註冊（`user_register`，含 WC 結帳建立帳號） |
+| P5 訂閱 | `SUBSCRIPTION_INITIAL_PAYMENT` | `pf/trigger/subscription_initial_payment` | 訂閱首次付款完成（powerhouse hook） |
+| P5 訂閱 | `SUBSCRIPTION_FAILED` | `pf/trigger/subscription_failed` | 訂閱失敗（powerhouse hook） |
+| P5 訂閱 | `SUBSCRIPTION_SUCCESS` | `pf/trigger/subscription_success` | 訂閱從失敗到成功（powerhouse hook） |
+| P5 訂閱 | `SUBSCRIPTION_RENEWAL_ORDER` | `pf/trigger/subscription_renewal_order` | 續訂訂單建立（powerhouse hook） |
+| P5 訂閱 | `SUBSCRIPTION_END` | `pf/trigger/subscription_end` | 訂閱結束（powerhouse hook） |
+| P5 訂閱 | `SUBSCRIPTION_TRIAL_END` | `pf/trigger/subscription_trial_end` | 試用期結束（powerhouse hook） |
+| P5 訂閱 | `SUBSCRIPTION_PREPAID_END` | `pf/trigger/subscription_prepaid_end` | 預付期結束（powerhouse hook） |
 
 ## Hook 命名慣例
 
@@ -213,11 +228,10 @@ power_funnel/activity_trigger/before_start   # ActivitySchedulerService：活動
 1. ESLint 與 `prettier-plugin-multiline-arrays` 可能有相容性問題
 2. TypeScript 版本可能超出 `@typescript-eslint` 官方支援範圍
 3. 使用 `legacy-peer-deps=true` 處理 peer dependency 衝突
-4. `ENode` enum 中 `SPILT_BRANCH` 為 typo（value 正確為 `split_branch`）
-5. PHPStan bootstrapFiles 包含本機硬編碼路徑（`C:\Users\User\DEV\...`）
-6. `@typescript-eslint/no-explicit-any` 設為 `warn` 而非 `error`
-7. ReactFlow 節點編輯器 UI 尚未開始開發（核心待辦）
-8. `ETriggerPoint::ACTIVITY_ENDED` 和 `ETriggerPoint::PROMO_LINK_CLICKED` 目前僅為枚舉存根，無實際觸發機制（無結束時間資料來源 / 無點擊追蹤機制）
+4. PHPStan bootstrapFiles 包含本機硬編碼路徑（`C:\Users\User\DEV\...`）
+5. `@typescript-eslint/no-explicit-any` 設為 `warn` 而非 `error`
+6. ReactFlow 節點編輯器 UI 尚未開始開發（核心待辦）
+7. `ETriggerPoint::ACTIVITY_ENDED` 和 `ETriggerPoint::PROMO_LINK_CLICKED` 目前僅為枚舉存根，無實際觸發機制（無結束時間資料來源 / 無點擊追蹤機制）
 
 ## 相關 SKILL
 
