@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Plugin Name:       Power Funnel
  * Plugin URI:        https://github.com/j7-dev/wp-power-funnel
@@ -15,7 +16,7 @@
  * Tags: youtube, funnel, line, marketing, webinar
  */
 
-declare (strict_types = 1);
+declare(strict_types=1);
 
 namespace J7\PowerFunnel;
 
@@ -23,27 +24,29 @@ if (!defined('ABSPATH')) {
 	exit; // Exit if accessed directly
 }
 
-if ( \class_exists( 'J7\PowerFunnel\Plugin' ) ) {
+if (\class_exists('J7\PowerFunnel\Plugin')) {
 	return;
 }
 
-if (\wp_get_environment_type() === 'local') {
-	require_once __DIR__ . '/vendor/autoload.php';
-} else {
-	require_once __DIR__ . '/vendor-prefixed/autoload.php';
-}
+// if (\wp_get_environment_type() === 'local') {
+require_once __DIR__ . '/vendor/autoload.php';
+// } else {
+// 	require_once __DIR__ . '/vendor-prefixed/autoload.php';
+// }
 
 /**
  * Class Plugin
  */
-final class Plugin {
+final class Plugin
+{
 	use \J7\WpUtils\Traits\PluginTrait;
 	use \J7\WpUtils\Traits\SingletonTrait;
 
 	/**
 	 * Constructor
 	 */
-	public function __construct() {
+	public function __construct()
+	{
 		// self::$template_page_names = [ '404' ];
 
 		$this->required_plugins = [
@@ -66,7 +69,7 @@ final class Plugin {
 			[
 				'app_name'    => 'Power Funnel',
 				'github_repo' => 'https://github.com/j7-dev/wp-power-funnel',
-				'callback'    => [ Bootstrap::class, 'register_hooks' ],
+				'callback'    => [Bootstrap::class, 'register_hooks'],
 				'lc'          => false,
 			]
 		);
@@ -80,8 +83,9 @@ final class Plugin {
 	 * @param array<string, mixed> $args        參數
 	 * @param int                  $trace_limit 堆疊深度
 	 */
-	public static function logger( string $message, string $level, array $args = [], $trace_limit = 0 ): void {
-		\J7\WpUtils\Classes\WC::logger( $message, $level, $args, self::$kebab, $trace_limit );
+	public static function logger(string $message, string $level, array $args = [], $trace_limit = 0): void
+	{
+		\J7\WpUtils\Classes\WC::logger($message, $level, $args, self::$kebab, $trace_limit);
 	}
 }
 
