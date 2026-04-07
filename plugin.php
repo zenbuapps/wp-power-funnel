@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name:       Power Funnel
- * Plugin URI:        https://github.com/j7-dev/wp-power-funnel
+ * Plugin URI:        https://github.com/p9-cloud/wp-power-funnel
  * Description:       自動抓取 Youtube 直播場次，讓用戶可以透過 LINE 報名
  * Version:           0.0.1
  * Requires at least: 5.7
@@ -59,7 +59,7 @@ final class Plugin
 			// [
 			// 'name'     => 'Powerhouse',
 			// 'slug'     => 'powerhouse',
-			// 'source'   => ''https://github.com/j7-dev/wp-powerhouse/releases/latest/download/powerhouse.zip',
+			// 'source'   => ''https://github.com/p9-cloud/wp-powerhouse/releases/latest/download/powerhouse.zip',
 			// 'version'  => '3.0.0',
 			// 'required' => true,
 			// ],
@@ -68,7 +68,7 @@ final class Plugin
 		$this->init(
 			[
 				'app_name'    => 'Power Funnel',
-				'github_repo' => 'https://github.com/j7-dev/wp-power-funnel',
+				'github_repo' => 'https://github.com/p9-cloud/wp-power-funnel',
 				'callback'    => [Bootstrap::class, 'register_hooks'],
 				'lc'          => false,
 			]

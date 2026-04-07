@@ -3,7 +3,7 @@
   "phpVersion": "8.2",
   "port": 8894,
   "plugins": [
-    "https://github.com/j7-dev/wp-powerhouse/releases/latest/download/powerhouse.zip",
+    "https://github.com/p9-cloud/wp-powerhouse/releases/latest/download/powerhouse.zip",
     "."
   ],
   "config": {
